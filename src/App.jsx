@@ -704,6 +704,13 @@ function App() {
         </button>
       </section>
 
+      <section className="calendar-legend" aria-label="Légende des indicateurs">
+        <span className="legend-pill">❤️ Favori</span>
+        <span className="legend-pill">📝 Journal</span>
+        <span className="legend-pill">🔔 Rappel actif</span>
+        <span className="legend-pill">🙂 Humeur</span>
+      </section>
+
       {securityOpen ? (
         <section className="security-panel">
           <h2>Verrouillage par code (Web Crypto)</h2>
@@ -774,6 +781,9 @@ function App() {
                         title={formatDateFr(cell.dateKey)}
                       >
                         <span className="day-number">{cell.day}</span>
+                        <span className="day-mood" aria-hidden="true" title="Humeur du jour">
+                          {cell.mood ? moodToEmoji(cell.mood) : "·"}
+                        </span>
                         <span className="day-icons" aria-hidden="true">
                           {cell.hasFavorite ? <span title="Favori">❤️</span> : <span className="ghost">·</span>}
                           {cell.hasJournal ? <span title="Journal">📝</span> : <span className="ghost">·</span>}
@@ -824,11 +834,13 @@ function App() {
                         {hiddenMediaCount > 0 ? <div className="timeline-media-more">+{hiddenMediaCount}</div> : null}
                       </div>
                     ) : null}
-                    <p className="meta-line">{entry.metadata?.locationLabel || "Lieu indisponible"}</p>
-                    <p className="meta-line">{weather}</p>
-                    <p className="meta-line">📷 {mediaItems.length} média(s)</p>
-                    <p className="meta-line">{entry.favorite ? "❤️ Favori" : "🤍 Non favori"}</p>
-                    <p className="meta-line">🔔 {entry.reminders?.filter((item) => !item.done).length || 0} actif(s)</p>
+                    <div className="timeline-chip-row">
+                      <span className="timeline-chip">📍 {entry.metadata?.locationLabel || "Lieu indisponible"}</span>
+                      <span className="timeline-chip">🌤 {weather}</span>
+                      <span className="timeline-chip">📷 {mediaItems.length} média(s)</span>
+                      <span className="timeline-chip">{entry.favorite ? "❤️ Favori" : "🤍 Non favori"}</span>
+                      <span className="timeline-chip">🔔 {entry.reminders?.filter((item) => !item.done).length || 0} actif(s)</span>
+                    </div>
                   </article>
                 );
               })
