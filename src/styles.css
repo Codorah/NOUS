@@ -19,6 +19,9 @@
   --space-2: 12px;
   --space-3: 16px;
   --space-4: 20px;
+  --text-base: clamp(1.02rem, 0.98rem + 0.18vw, 1.1rem);
+  --text-sm: clamp(0.95rem, 0.92rem + 0.12vw, 1.01rem);
+  --text-xs: clamp(0.84rem, 0.81rem + 0.12vw, 0.92rem);
 }
 
 * {
@@ -34,7 +37,8 @@ body,
 body {
   margin: 0;
   color: var(--ink);
-  line-height: 1.45;
+  line-height: 1.55;
+  font-size: var(--text-base);
   font-family: "Quicksand", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -89,7 +93,7 @@ textarea:focus-visible {
 .topbar h1 {
   margin: 0 0 6px;
   font-family: "Caveat", cursive;
-  font-size: clamp(2rem, 4.1vw, 3.3rem);
+  font-size: clamp(2.15rem, 4.5vw, 3.5rem);
   line-height: 1;
 }
 
@@ -101,6 +105,7 @@ textarea:focus-visible {
   margin: 0;
   color: var(--ink-soft);
   max-width: 58ch;
+  font-size: clamp(1rem, 0.97rem + 0.16vw, 1.08rem);
 }
 
 .topbar-actions {
@@ -140,13 +145,14 @@ textarea:focus-visible {
 
 .menu-toggle-text {
   font-weight: 600;
+  font-size: var(--text-sm);
 }
 
 .profile-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.92rem;
+  font-size: var(--text-sm);
   background: #fff8ee;
   border: 1px solid rgba(56, 39, 20, 0.22);
   border-radius: 999px;
@@ -178,6 +184,7 @@ textarea:focus-visible {
   min-height: 40px;
   min-width: 96px;
   padding: 8px 14px;
+  font-size: var(--text-sm);
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -205,16 +212,17 @@ textarea:focus-visible {
 
 .stat-card h3 {
   margin: 0 0 6px;
-  font-size: 1rem;
+  font-size: clamp(1.03rem, 0.98rem + 0.15vw, 1.12rem);
 }
 
 .stat-card p {
   margin: 4px 0;
   color: var(--ink-soft);
+  font-size: var(--text-sm);
 }
 
 .stat-card strong {
-  font-size: clamp(1.28rem, 2.1vw, 1.55rem);
+  font-size: clamp(1.35rem, 2.4vw, 1.7rem);
 }
 
 .toolbar {
@@ -229,6 +237,8 @@ textarea:focus-visible {
   border-radius: 12px;
   padding: 10px 13px;
   min-height: 44px;
+  font-size: var(--text-sm);
+  font-weight: 600;
   cursor: pointer;
   background: #fffef9;
   color: var(--ink);
@@ -261,6 +271,7 @@ textarea:focus-visible {
 
 .security-panel h2 {
   margin-top: 0;
+  font-size: clamp(1.12rem, 1.04rem + 0.24vw, 1.26rem);
 }
 
 .security-grid {
@@ -283,6 +294,7 @@ textarea:focus-visible {
 .hint {
   color: var(--ink-soft);
   margin: 4px 0 0;
+  font-size: var(--text-sm);
 }
 
 .calendar-grid {
@@ -303,13 +315,14 @@ textarea:focus-visible {
 .month-card h3 {
   margin: 0 0 9px;
   text-align: center;
+  font-size: clamp(1.06rem, 1rem + 0.18vw, 1.15rem);
 }
 
 .weekday-row {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   color: var(--ink-soft);
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
   text-align: center;
   margin-bottom: 4px;
 }
@@ -366,12 +379,13 @@ textarea:focus-visible {
 .day-number {
   font-weight: 700;
   line-height: 1;
+  font-size: clamp(0.92rem, 0.86rem + 0.2vw, 1.03rem);
 }
 
 .day-icons {
   display: inline-flex;
   gap: 3px;
-  font-size: 0.66rem;
+  font-size: clamp(0.7rem, 0.66rem + 0.12vw, 0.77rem);
   margin-top: 2px;
 }
 
@@ -392,6 +406,7 @@ textarea:focus-visible {
   padding: 14px;
   background: var(--panel);
   box-shadow: var(--shadow-soft);
+  font-size: var(--text-sm);
 }
 
 .empty-card {
@@ -415,7 +430,7 @@ textarea:focus-visible {
 
 .meta-line {
   margin: 4px 0;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   color: var(--ink-soft);
 }
 
@@ -426,6 +441,7 @@ textarea:focus-visible {
   background: var(--panel);
   box-shadow: var(--shadow-soft);
   padding: 10px 12px;
+  font-size: var(--text-sm);
 }
 
 .app-credit-name {
@@ -504,7 +520,7 @@ textarea:focus-visible {
 
 .editor-header h2 {
   margin: 0;
-  font-size: clamp(1.12rem, 2.2vw, 1.5rem);
+  font-size: clamp(1.22rem, 2.5vw, 1.62rem);
 }
 
 .editor-section {
@@ -517,12 +533,13 @@ textarea:focus-visible {
 
 .editor-section h3 {
   margin: 0 0 6px;
+  font-size: clamp(1.05rem, 0.99rem + 0.2vw, 1.16rem);
 }
 
 .prompt {
   margin: 10px 0;
   font-family: "Caveat", cursive;
-  font-size: clamp(1.38rem, 3.4vw, 1.95rem);
+  font-size: clamp(1.55rem, 3.8vw, 2.2rem);
   color: var(--accent-strong);
 }
 
@@ -530,6 +547,7 @@ textarea:focus-visible {
   display: inline-block;
   margin: 8px 0 6px;
   font-weight: 700;
+  font-size: var(--text-sm);
 }
 
 textarea {
@@ -540,6 +558,7 @@ textarea {
   border: 1px solid rgba(56, 39, 20, 0.25);
   padding: 12px;
   background: #fffefc;
+  font-size: var(--text-sm);
 }
 
 .mood-row {
@@ -554,6 +573,7 @@ textarea {
   border-radius: 999px;
   min-height: 40px;
   padding: 6px 10px;
+  font-size: var(--text-sm);
   cursor: pointer;
 }
 
@@ -621,6 +641,7 @@ textarea {
   border-radius: 10px;
   border: 1px solid rgba(56, 39, 20, 0.25);
   background: #fff;
+  font-size: var(--text-sm);
 }
 
 .reminder-list {
@@ -640,6 +661,7 @@ textarea {
   background: #fff;
   border: 1px solid rgba(56, 39, 20, 0.2);
   padding: 8px;
+  font-size: var(--text-sm);
 }
 
 .reminder-list label {
@@ -677,16 +699,19 @@ textarea {
 .soft {
   color: var(--ink-soft);
   margin: 6px 0;
+  font-size: var(--text-sm);
 }
 
 .text-success {
   color: var(--ok);
   margin: 8px 0 0;
+  font-size: var(--text-sm);
 }
 
 .text-error {
   color: var(--err);
   margin: 8px 0 0;
+  font-size: var(--text-sm);
 }
 
 .lock-screen {
@@ -707,6 +732,7 @@ textarea {
 
 .lock-card h1 {
   margin-top: 0;
+  font-size: clamp(1.4rem, 1.25rem + 0.5vw, 1.7rem);
 }
 
 .lock-card input {
@@ -716,6 +742,7 @@ textarea {
   border-radius: 10px;
   border: 1px solid rgba(56, 39, 20, 0.25);
   margin-bottom: 8px;
+  font-size: var(--text-sm);
 }
 
 @media (max-width: 980px) {
