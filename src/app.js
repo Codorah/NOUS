@@ -3,6 +3,7 @@ const STORAGE_KEY_LOCK = "journal.lock.v1";
 const STORAGE_KEY_DRAFTS = "journal.drafts.v1";
 const STORAGE_KEY_PROFILE = "journal.profile.v1";
 const STORAGE_KEY_DAILY_NOTIFICATION = "journal.daily.notification.v1";
+const STORAGE_KEY_CLIENT = "journal.client.id.v1";
 const DAILY_MOTIVATION_TARGET_HOUR = 8;
 
 const MONTH_NAMES = [
@@ -354,17 +355,64 @@ function normalizeProfileName(profileName) {
   return value || "toi";
 }
 
-function getStableMessageIndex(date) {
+let cachedClientMessageOffset = null;
+
+function positiveModulo(value, modulo) {
+  return ((value % modulo) + modulo) % modulo;
+}
+
+function hashStringStable(input) {
+  let hash = 2166136261;
+
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+}
+
+function getOrCreateClientMessageId() {
+  if (typeof localStorage === "undefined") {
+    return "anonymous-client";
+  }
+
+  try {
+    const existing = localStorage.getItem(STORAGE_KEY_CLIENT);
+    if (typeof existing === "string" && existing.trim()) {
+      return existing;
+    }
+
+    const clientId = createClientId();
+    localStorage.setItem(STORAGE_KEY_CLIENT, clientId);
+    return clientId;
+  } catch (error) {
+    return "anonymous-client";
+  }
+}
+
+function getClientMessageOffset() {
+  if (typeof cachedClientMessageOffset === "number") {
+    return cachedClientMessageOffset;
+  }
+
+  const clientId = getOrCreateClientMessageId();
+  cachedClientMessageOffset = hashStringStable(clientId) % MESSAGE_LIBRARY.length;
+  return cachedClientMessageOffset;
+}
+
+function getStableMessageIndex(date, clientOffset = getClientMessageOffset()) {
   const startUtc = Date.UTC(MESSAGE_HORIZON_START_YEAR, 0, 1);
   const endUtc = Date.UTC(MESSAGE_HORIZON_START_YEAR + MESSAGE_HORIZON_YEARS, 0, 1);
   const dateUtc = toUtcMidnight(date);
 
   if (dateUtc >= startUtc && dateUtc < endUtc) {
-    return Math.floor((dateUtc - startUtc) / MS_PER_DAY) % MESSAGE_LIBRARY.length;
+    const dayOffset = Math.floor((dateUtc - startUtc) / MS_PER_DAY);
+    return positiveModulo(dayOffset + clientOffset, MESSAGE_LIBRARY.length);
   }
 
-  const fallbackSeed = date.getFullYear() * 379 + getDayOfYear(date) * 41;
-  return Math.abs(fallbackSeed) % MESSAGE_LIBRARY.length;
+  const fallbackSeed = date.getFullYear() * 379 + getDayOfYear(date) * 41 + clientOffset * 17;
+  return positiveModulo(fallbackSeed, MESSAGE_LIBRARY.length);
 }
 
 export function getMotivationalLibraryInfo() {
@@ -377,7 +425,7 @@ export function getMotivationalLibraryInfo() {
 
 export function buildMotivationalMessage(dateKey, profileName = "") {
   const date = parseDateKey(dateKey);
-  const messageIndex = getStableMessageIndex(date);
+  const messageIndex = getStableMessageIndex(date, getClientMessageOffset());
   const baseMessage = MESSAGE_LIBRARY[messageIndex];
   const name = normalizeProfileName(profileName);
 
