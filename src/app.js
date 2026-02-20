@@ -3,6 +3,7 @@ const STORAGE_KEY_LOCK = "journal.lock.v1";
 const STORAGE_KEY_DRAFTS = "journal.drafts.v1";
 const STORAGE_KEY_PROFILE = "journal.profile.v1";
 const STORAGE_KEY_DAILY_NOTIFICATION = "journal.daily.notification.v1";
+const DAILY_MOTIVATION_TARGET_HOUR = 8;
 
 const MONTH_NAMES = [
   "Janvier",
@@ -791,7 +792,7 @@ export function requestNotificationAccess() {
   return Notification.requestPermission();
 }
 
-export function sendBrowserNotification(title, body) {
+export async function sendBrowserNotification(title, body, options = {}) {
   if (typeof Notification === "undefined") {
     return false;
   }
@@ -800,16 +801,86 @@ export function sendBrowserNotification(title, body) {
     return false;
   }
 
-  new Notification(title, { body });
-  return true;
+  const targetUrl = typeof options.url === "string" ? options.url : "/";
+  const payload = {
+    body,
+    tag: options.tag || `nous-${Date.now()}`,
+    data: {
+      url: targetUrl
+    },
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    renotify: false
+  };
+
+  try {
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, payload);
+      return true;
+    }
+  } catch (error) {
+    // Fallback to window notification below.
+  }
+
+  try {
+    const notification = new Notification(title, payload);
+    notification.onclick = () => {
+      if (typeof window !== "undefined") {
+        window.focus();
+        if (window.location.pathname !== targetUrl) {
+          window.location.assign(targetUrl);
+        }
+      }
+      notification.close();
+    };
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
-export function shouldSendDailyMotivation(dateKey) {
+export function getDailyMotivationScheduleInfo() {
+  const hour = DAILY_MOTIVATION_TARGET_HOUR;
+  const label = `${String(hour).padStart(2, "0")}:00`;
+
+  return { hour, label };
+}
+
+function resolveDailyNotificationDateKey(value) {
+  if (typeof value === "string" && value) {
+    return value;
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return formatDateKey(value);
+  }
+
+  const asDate = new Date(value || Date.now());
+  return Number.isNaN(asDate.getTime()) ? formatDateKey(new Date()) : formatDateKey(asDate);
+}
+
+export function shouldSendDailyMotivation(nowOrDateKey = new Date(), targetHour = DAILY_MOTIVATION_TARGET_HOUR) {
   const last = localStorage.getItem(STORAGE_KEY_DAILY_NOTIFICATION);
-  return last !== dateKey;
+
+  if (typeof nowOrDateKey === "string") {
+    return last !== nowOrDateKey;
+  }
+
+  const now = nowOrDateKey instanceof Date ? nowOrDateKey : new Date(nowOrDateKey);
+  if (Number.isNaN(now.getTime())) {
+    return false;
+  }
+
+  if (now.getHours() < targetHour) {
+    return false;
+  }
+
+  return last !== formatDateKey(now);
 }
 
-export function markDailyMotivationSent(dateKey) {
+export function markDailyMotivationSent(nowOrDateKey = new Date()) {
+  const dateKey = resolveDailyNotificationDateKey(nowOrDateKey);
   localStorage.setItem(STORAGE_KEY_DAILY_NOTIFICATION, dateKey);
 }
 

@@ -48,3 +48,29 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification?.data?.url || "/";
+  const absoluteUrl = new URL(targetUrl, self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        const clientUrl = new URL(client.url, self.location.origin);
+        const target = new URL(absoluteUrl);
+
+        if (clientUrl.pathname === target.pathname && "focus" in client) {
+          return client.focus();
+        }
+      }
+
+      if (clients.openWindow) {
+        return clients.openWindow(absoluteUrl);
+      }
+
+      return undefined;
+    })
+  );
+});

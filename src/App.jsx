@@ -15,6 +15,7 @@ import {
   formatDateFr,
   formatDateKey,
   formatDateTimeFr,
+  getDailyMotivationScheduleInfo,
   getMemoriesForDate,
   getPromptForDate,
   getYearOverviewStats,
@@ -186,6 +187,7 @@ function App() {
   const dayPrompt = getPromptForDate(activeDateKey);
   const generatedMessage = buildMotivationalMessage(activeDateKey, profileName);
   const dayMessage = draft.customMessage.trim() || generatedMessage;
+  const dailyNotificationInfo = getDailyMotivationScheduleInfo();
 
   function openEditor(dateKey) {
     const existing = entries[dateKey];
@@ -263,7 +265,10 @@ function App() {
         if (notificationPermission === "granted") {
           dueAlerts.forEach((alert) => {
             const dateLabel = formatDateFr(alert.dateKey, { day: "numeric", month: "long" });
-            sendBrowserNotification("Rappel personnel", `${alert.reminderTitle} (${dateLabel})`);
+            sendBrowserNotification("Rappel personnel", `${alert.reminderTitle} (${dateLabel})`, {
+              tag: `reminder-${alert.reminderId}`,
+              url: "/"
+            });
           });
         }
 
@@ -272,18 +277,22 @@ function App() {
         return nextEntries;
       });
 
-      const currentDateKey = formatDateKey(new Date());
-      if (notificationPermission === "granted" && shouldSendDailyMotivation(currentDateKey)) {
+      const now = new Date();
+      const currentDateKey = formatDateKey(now);
+      if (notificationPermission === "granted" && shouldSendDailyMotivation(now, dailyNotificationInfo.hour)) {
         const shortMessage = buildMotivationalMessage(currentDateKey, profileName).slice(0, 180);
-        sendBrowserNotification("Message motivationnel du matin", shortMessage);
-        markDailyMotivationSent(currentDateKey);
+        sendBrowserNotification("Message motivationnel du matin", shortMessage, {
+          tag: `daily-${currentDateKey}`,
+          url: "/"
+        });
+        markDailyMotivationSent(now);
       }
     };
 
     runNotificationCycle();
     const timer = setInterval(runNotificationCycle, 60000);
     return () => clearInterval(timer);
-  }, [notificationPermission, profileName]);
+  }, [dailyNotificationInfo.hour, notificationPermission, profileName]);
 
   async function handleSaveEntry() {
     setSaving(true);
@@ -483,7 +492,7 @@ function App() {
     setNotificationPermission(permission);
 
     if (permission === "granted") {
-      setStatusMessage("Notifications activées.");
+      setStatusMessage(`Notifications activées. Message quotidien à ${dailyNotificationInfo.label}.`);
       return;
     }
 
@@ -790,6 +799,9 @@ function App() {
                 const weather = entry.metadata?.weather
                   ? `${entry.metadata.weather.description} ${entry.metadata.weather.temperatureC ?? ""}°C`
                   : "Météo indisponible";
+                const mediaItems = Array.isArray(entry.media) ? entry.media : [];
+                const mediaPreview = mediaItems.slice(0, 3);
+                const hiddenMediaCount = Math.max(0, mediaItems.length - mediaPreview.length);
 
                 return (
                   <article className="timeline-card" key={entry.id}>
@@ -798,8 +810,23 @@ function App() {
                     </button>
                     <p className="mood-line">Humeur: {moodToEmoji(entry.mood)}</p>
                     <p>{preview || "(Entrée média sans texte)"}</p>
+                    {mediaPreview.length > 0 ? (
+                      <div className="timeline-media-grid">
+                        {mediaPreview.map((media, index) => (
+                          <article className="timeline-media-item" key={media.id || `${entry.id}-media-${index}`}>
+                            {String(media.type || "").startsWith("image/") ? (
+                              <img src={media.dataUrl} alt={media.name || "Photo du journal"} loading="lazy" />
+                            ) : (
+                              <video src={media.dataUrl} controls preload="metadata" playsInline muted />
+                            )}
+                          </article>
+                        ))}
+                        {hiddenMediaCount > 0 ? <div className="timeline-media-more">+{hiddenMediaCount}</div> : null}
+                      </div>
+                    ) : null}
                     <p className="meta-line">{entry.metadata?.locationLabel || "Lieu indisponible"}</p>
                     <p className="meta-line">{weather}</p>
+                    <p className="meta-line">📷 {mediaItems.length} média(s)</p>
                     <p className="meta-line">{entry.favorite ? "❤️ Favori" : "🤍 Non favori"}</p>
                     <p className="meta-line">🔔 {entry.reminders?.filter((item) => !item.done).length || 0} actif(s)</p>
                   </article>
@@ -926,7 +953,7 @@ function App() {
                 <button className="btn" onClick={handleRequestNotifications}>
                   Activer les notifications
                 </button>
-                <span className="soft">Statut: {notificationPermission}</span>
+                <span className="soft">Statut: {notificationPermission} · Quotidien: {dailyNotificationInfo.label}</span>
               </div>
 
               {draft.reminders.length === 0 ? (
