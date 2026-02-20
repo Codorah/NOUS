@@ -12,7 +12,6 @@ import {
   createClientId,
   createEmptyDraft,
   estimateStorageSize,
-  exportEntries,
   formatDateFr,
   formatDateKey,
   formatDateTimeFr,
@@ -40,8 +39,8 @@ import {
   verifyLockPin
 } from "./app";
 
-function downloadJson(filename, content) {
-  const blob = new Blob([content], { type: "application/json" });
+function downloadFile(filename, content, mimeType = "text/plain;charset=utf-8") {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -68,6 +67,79 @@ function sortReminders(reminders) {
   });
 }
 
+function buildReadableJournalMarkdown(entries, profileName) {
+  const titleName = profileName?.trim() ? `${profileName.trim()} - ` : "";
+  const now = new Date().toISOString();
+
+  const lines = [
+    `# ${titleName}NOUS - Journal`,
+    "",
+    `Export: ${now}`,
+    `Nombre d'entrees: ${entries.length}`,
+    ""
+  ];
+
+  if (entries.length === 0) {
+    lines.push("Aucune entree enregistree.");
+    return `${lines.join("\n")}\n`;
+  }
+
+  for (const entry of entries) {
+    const dateLabel = formatDateFr(entry.dateISO, {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+
+    lines.push(`## ${dateLabel}`);
+    lines.push(`- Humeur: ${moodToEmoji(entry.mood)} (${entry.mood ?? "-"}/5)`);
+    lines.push(`- Favori: ${entry.favorite ? "Oui" : "Non"}`);
+    lines.push(`- Localisation: ${entry.metadata?.locationLabel || "Non renseignee"}`);
+    lines.push(
+      `- Meteo: ${
+        entry.metadata?.weather
+          ? `${entry.metadata.weather.description} (${entry.metadata.weather.temperatureC ?? "?"}degC)`
+          : "Non renseignee"
+      }`
+    );
+
+    if (entry.customMessage?.trim()) {
+      lines.push("");
+      lines.push("### Message personnalise");
+      lines.push(entry.customMessage.trim());
+    }
+
+    if (entry.text?.trim()) {
+      lines.push("");
+      lines.push("### Journal");
+      lines.push(entry.text.trim());
+    } else if (entry.media?.length) {
+      lines.push("");
+      lines.push("### Journal");
+      lines.push("(Entree media sans texte)");
+    }
+
+    if (Array.isArray(entry.reminders) && entry.reminders.length > 0) {
+      lines.push("");
+      lines.push("### Rappels");
+      for (const reminder of entry.reminders) {
+        lines.push(`- [${reminder.done ? "x" : " "}] ${reminder.title}`);
+      }
+    }
+
+    if (entry.media?.length) {
+      lines.push("");
+      lines.push(`### Medias (${entry.media.length})`);
+      lines.push("- Contenu media present dans l'application locale.");
+    }
+
+    lines.push("");
+  }
+
+  return `${lines.join("\n")}\n`;
+}
+
 function App() {
   const todayKey = formatDateKey(new Date());
   const [entries, setEntries] = useState(() => loadEntries());
@@ -81,6 +153,7 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [autoSaveInfo, setAutoSaveInfo] = useState("");
   const [profileName, setProfileName] = useState(() => loadProfileName());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [notificationPermission, setNotificationPermission] = useState(() => {
     if (typeof Notification === "undefined") {
@@ -142,6 +215,27 @@ function App() {
   useEffect(() => {
     persistProfileName(profileName);
   }, [profileName]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia("(min-width: 761px)");
+    const handleChange = (event) => {
+      if (event.matches) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
 
   useEffect(() => {
     if (!editorOpen) {
@@ -346,8 +440,11 @@ function App() {
   }
 
   function handleExport() {
-    const filename = `journal-export-${new Date().toISOString().slice(0, 10)}.json`;
-    downloadJson(filename, exportEntries(entries));
+    const filename = `NOUS-journal-${new Date().toISOString().slice(0, 10)}.md`;
+    const orderedEntries = [...timelineEntries].reverse();
+    const content = buildReadableJournalMarkdown(orderedEntries, profileName);
+    downloadFile(filename, content, "text/markdown;charset=utf-8");
+    setStatusMessage("Journal telecharge en format lisible (.md).");
   }
 
   async function handleShareMessage() {
@@ -477,12 +574,27 @@ function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div>
-          <h1>Calendrier Motivationnel {selectedYear}</h1>
+        <div className="topbar-title">
+          <h1>NOUS {selectedYear}</h1>
           <p>Compagnon quotidien: motivation, journal intime, rappels et humeur.</p>
         </div>
 
-        <div className="topbar-actions">
+        <button
+          type="button"
+          className={`menu-toggle ${mobileMenuOpen ? "open" : ""}`}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="topbar-actions-menu"
+          onClick={() => setMobileMenuOpen((previous) => !previous)}
+        >
+          <span className="menu-toggle-bars" aria-hidden="true">
+            <span className="menu-toggle-bar" />
+            <span className="menu-toggle-bar" />
+            <span className="menu-toggle-bar" />
+          </span>
+          <span className="menu-toggle-text">{mobileMenuOpen ? "Fermer" : "Menu"}</span>
+        </button>
+
+        <div id="topbar-actions-menu" className={`topbar-actions ${mobileMenuOpen ? "open" : ""}`}>
           <label className="profile-chip" htmlFor="profile-name">
             Prénom
             <input
@@ -495,24 +607,54 @@ function App() {
           </label>
 
           <div className="segmented">
-            <button className={viewMode === "calendar" ? "active" : ""} onClick={() => setViewMode("calendar")}>
+            <button
+              className={viewMode === "calendar" ? "active" : ""}
+              onClick={() => {
+                setViewMode("calendar");
+                setMobileMenuOpen(false);
+              }}
+            >
               Calendrier
             </button>
-            <button className={viewMode === "timeline" ? "active" : ""} onClick={() => setViewMode("timeline")}>
+            <button
+              className={viewMode === "timeline" ? "active" : ""}
+              onClick={() => {
+                setViewMode("timeline");
+                setMobileMenuOpen(false);
+              }}
+            >
               Timeline
             </button>
           </div>
 
-          <button className="btn" onClick={handleExport}>
-            Exporter JSON
+          <button
+            className="btn"
+            onClick={() => {
+              handleExport();
+              setMobileMenuOpen(false);
+            }}
+          >
+            Telecharger mon journal
           </button>
 
-          <button className="btn" onClick={() => setSecurityOpen((prev) => !prev)}>
+          <button
+            className="btn"
+            onClick={() => {
+              setSecurityOpen((prev) => !prev);
+              setMobileMenuOpen(false);
+            }}
+          >
             Sécurité
           </button>
 
           {lockEnabled ? (
-            <button className="btn" onClick={() => setIsUnlocked(false)}>
+            <button
+              className="btn"
+              onClick={() => {
+                setIsUnlocked(false);
+                setMobileMenuOpen(false);
+              }}
+            >
               Verrouiller
             </button>
           ) : null}
@@ -667,6 +809,17 @@ function App() {
           </section>
         )}
       </main>
+
+      <footer className="app-credit" aria-label="Informations developpeuse">
+        <p className="app-credit-name">
+          Developpeuse: <strong>Elodie ATANA</strong> (Codorah)
+        </p>
+        <p className="app-credit-links">
+          <a href="mailto:Codorah@hotmail.com">Codorah@hotmail.com</a>
+          <span aria-hidden="true">|</span>
+          <a href="tel:+22871672565">+228 71 67 25 65</a>
+        </p>
+      </footer>
 
       <button className="floating-new" onClick={() => openEditor(todayKey)}>
         + Aujourd'hui

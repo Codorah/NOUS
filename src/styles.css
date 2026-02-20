@@ -93,6 +93,10 @@ textarea:focus-visible {
   line-height: 1;
 }
 
+.topbar-title {
+  min-width: 0;
+}
+
 .topbar p {
   margin: 0;
   color: var(--ink-soft);
@@ -105,6 +109,37 @@ textarea:focus-visible {
   gap: 8px;
   justify-content: flex-end;
   align-items: center;
+}
+
+.menu-toggle {
+  display: none;
+  border: 1px solid rgba(56, 39, 20, 0.24);
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: #fffef9;
+  color: var(--ink);
+  cursor: pointer;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-toggle-bars {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.menu-toggle-bar {
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 10px;
+}
+
+.menu-toggle-text {
+  font-weight: 600;
 }
 
 .profile-chip {
@@ -384,6 +419,39 @@ textarea:focus-visible {
   color: var(--ink-soft);
 }
 
+.app-credit {
+  margin-top: 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+  padding: 10px 12px;
+}
+
+.app-credit-name {
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+
+.app-credit-links {
+  margin: 0;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink-soft);
+  flex-wrap: wrap;
+}
+
+.app-credit-links a {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.app-credit-links a:hover,
+.app-credit-links a:focus-visible {
+  text-decoration: underline;
+}
+
 .floating-new {
   position: fixed;
   right: max(12px, env(safe-area-inset-right));
@@ -655,14 +723,6 @@ textarea {
     position: relative;
     top: 0;
   }
-
-  .topbar {
-    flex-direction: column;
-  }
-
-  .topbar-actions {
-    justify-content: flex-start;
-  }
 }
 
 @media (max-width: 760px) {
@@ -682,6 +742,45 @@ textarea {
 
   .timeline-grid {
     grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    row-gap: 10px;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    justify-self: end;
+  }
+
+  .topbar-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .topbar-actions.open {
+    display: flex;
+  }
+
+  .topbar-actions .btn {
+    width: 100%;
+  }
+
+  .topbar-actions .segmented {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .topbar-actions .segmented button {
+    flex: 1;
+    min-width: 0;
   }
 
   .modal-backdrop {
@@ -754,6 +853,11 @@ textarea {
 
   .editor-footer .btn {
     flex: 1;
+  }
+
+  .app-credit-links {
+    display: flex;
+    gap: 6px;
   }
 }
 
