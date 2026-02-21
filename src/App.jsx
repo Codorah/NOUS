@@ -162,6 +162,7 @@ const UI_TEXT = {
     timelineEmptyTitle: "Ta timeline est vide",
     timelineEmptyText: "Ajoute une première entrée depuis la vue calendrier.",
     profileTitle: "Espace profil",
+    profileSummary: "Ton espace perso pour suivre ton bien-être, tes habitudes et tes rappels.",
     firstName: "Prénom",
     firstNamePlaceholder: "Ton prénom",
     statsJourney: "Parcours annuel",
@@ -185,6 +186,7 @@ const UI_TEXT = {
     historyMood: "Humeur",
     historyFavorite: "Favoris",
     historyEmpty: "Aucun élément dans cette catégorie.",
+    historyCount: "{count} élément(s)",
     entryWithoutText: "(Entrée sans texte)",
     reminderCount: "{count} rappel(s)",
     moodLabel: "Humeur: {emoji}",
@@ -200,6 +202,8 @@ const UI_TEXT = {
     ringtoneSoft: "Douce",
     ringtoneDigital: "Digitale",
     ringtoneOff: "Désactivée",
+    reminderNotificationTitle: "Rappel personnel",
+    dailyNotificationTitle: "Message motivationnel du matin",
     mobileNavCalendar: "Calendrier",
     mobileNavProfile: "Profil",
     mobileNavToday: "Aujourd'hui"
@@ -218,6 +222,7 @@ const UI_TEXT = {
     timelineEmptyTitle: "Your timeline is empty",
     timelineEmptyText: "Add your first entry from calendar view.",
     profileTitle: "Profile space",
+    profileSummary: "Your personal space to track well-being, habits, and reminders.",
     firstName: "First name",
     firstNamePlaceholder: "Your first name",
     statsJourney: "Year progress",
@@ -241,6 +246,7 @@ const UI_TEXT = {
     historyMood: "Mood",
     historyFavorite: "Favorites",
     historyEmpty: "No items in this category.",
+    historyCount: "{count} item(s)",
     entryWithoutText: "(Entry without text)",
     reminderCount: "{count} reminder(s)",
     moodLabel: "Mood: {emoji}",
@@ -256,6 +262,8 @@ const UI_TEXT = {
     ringtoneSoft: "Soft",
     ringtoneDigital: "Digital",
     ringtoneOff: "Disabled",
+    reminderNotificationTitle: "Personal reminder",
+    dailyNotificationTitle: "Morning motivational message",
     mobileNavCalendar: "Calendar",
     mobileNavProfile: "Profile",
     mobileNavToday: "Today"
@@ -274,6 +282,7 @@ const UI_TEXT = {
     timelineEmptyTitle: "Tu timeline está vacía",
     timelineEmptyText: "Agrega tu primera entrada desde la vista calendario.",
     profileTitle: "Espacio perfil",
+    profileSummary: "Tu espacio personal para seguir tu bienestar, hábitos y recordatorios.",
     firstName: "Nombre",
     firstNamePlaceholder: "Tu nombre",
     statsJourney: "Progreso anual",
@@ -297,6 +306,7 @@ const UI_TEXT = {
     historyMood: "Ánimo",
     historyFavorite: "Favoritos",
     historyEmpty: "No hay elementos en esta categoría.",
+    historyCount: "{count} elemento(s)",
     entryWithoutText: "(Entrada sin texto)",
     reminderCount: "{count} recordatorio(s)",
     moodLabel: "Ánimo: {emoji}",
@@ -312,6 +322,8 @@ const UI_TEXT = {
     ringtoneSoft: "Suave",
     ringtoneDigital: "Digital",
     ringtoneOff: "Desactivado",
+    reminderNotificationTitle: "Recordatorio personal",
+    dailyNotificationTitle: "Mensaje motivacional de la mañana",
     mobileNavCalendar: "Calendario",
     mobileNavProfile: "Perfil",
     mobileNavToday: "Hoy"
@@ -440,7 +452,7 @@ function App() {
   const memories = useMemo(() => getMemoriesForDate(entries, activeDateKey), [entries, activeDateKey]);
   const activeEntry = entries[activeDateKey];
   const dayPrompt = getPromptForDate(activeDateKey);
-  const generatedMessage = buildMotivationalMessage(activeDateKey, profileName);
+  const generatedMessage = buildMotivationalMessage(activeDateKey, profileName, appLanguage);
   const dayMessage = draft.customMessage.trim() || generatedMessage;
   const dailyNotificationInfo = getDailyMotivationScheduleInfo();
   const t = (key, vars) => resolveText(appLanguage, key, vars);
@@ -556,7 +568,7 @@ function App() {
         if (notificationPermission === "granted") {
           dueAlerts.forEach((alert) => {
             const dateLabel = formatDateFr(alert.dateKey, { day: "numeric", month: "long" });
-            sendBrowserNotification("Rappel personnel", `${alert.reminderTitle} (${dateLabel})`, {
+            sendBrowserNotification(t("reminderNotificationTitle"), `${alert.reminderTitle} (${dateLabel})`, {
               tag: `reminder-${alert.reminderId}`,
               url: "/"
             });
@@ -571,8 +583,8 @@ function App() {
       const now = new Date();
       const currentDateKey = formatDateKey(now);
       if (notificationPermission === "granted" && shouldSendDailyMotivation(now, dailyNotificationInfo.hour)) {
-        const shortMessage = buildMotivationalMessage(currentDateKey, profileName).slice(0, 180);
-        sendBrowserNotification("Message motivationnel du matin", shortMessage, {
+        const shortMessage = buildMotivationalMessage(currentDateKey, profileName, appLanguage).slice(0, 180);
+        sendBrowserNotification(t("dailyNotificationTitle"), shortMessage, {
           tag: `daily-${currentDateKey}`,
           url: "/"
         });
@@ -606,7 +618,7 @@ function App() {
         window.removeEventListener("focus", runNotificationCycle);
       }
     };
-  }, [dailyNotificationInfo.hour, notificationPermission, profileName, reminderRingtone, reminderSoundEnabled]);
+  }, [appLanguage, dailyNotificationInfo.hour, notificationPermission, profileName, reminderRingtone, reminderSoundEnabled]);
 
   async function handleSaveEntry() {
     setSaving(true);
@@ -1052,6 +1064,22 @@ function App() {
             </div>
 
             <div className="profile-drawer-body">
+              <section className="profile-hero">
+                <div className="profile-hero-main">
+                  <span className="profile-emoji-badge" aria-hidden="true">🤎</span>
+                  <div>
+                    <h3>{profileName?.trim() || "NOUS"}</h3>
+                    <p>{t("profileSummary")}</p>
+                  </div>
+                </div>
+                <div className="profile-hero-metrics" aria-label="Résumé annuel">
+                  <span className="profile-hero-chip">📝 {yearStats.daysWithJournal}</span>
+                  <span className="profile-hero-chip">❤️ {yearStats.favoriteDays}</span>
+                  <span className="profile-hero-chip">🔔 {yearStats.openReminders}</span>
+                  <span className="profile-hero-chip">{moodToEmoji(Math.round(yearStats.averageMood || 3))}</span>
+                </div>
+              </section>
+
               <label className="profile-chip profile-chip-wide" htmlFor="profile-name">
                 {t("firstName")}
                 <input
@@ -1088,46 +1116,85 @@ function App() {
                 <span className="legend-pill">{t("legendMood")}</span>
               </section>
 
-              <section className="profile-settings">
-                <h3>{t("settingsTitle")}</h3>
-                <div className="settings-grid">
-                  <label className="settings-field">
-                    <span>{t("language")}</span>
-                    <select value={appLanguage} onChange={(event) => setAppLanguage(event.target.value)}>
-                      {LANGUAGE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
+              <section className="profile-columns">
+                <section className="profile-settings">
+                  <h3>{t("settingsTitle")}</h3>
+                  <div className="settings-grid">
+                    <label className="settings-field">
+                      <span>{t("language")}</span>
+                      <select value={appLanguage} onChange={(event) => setAppLanguage(event.target.value)}>
+                        {LANGUAGE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="settings-field">
+                      <span>{t("theme")}</span>
+                      <select value={themeMode} onChange={(event) => setThemeMode(event.target.value)}>
+                        <option value="light">{t("themeLight")}</option>
+                        <option value="dark">{t("themeDark")}</option>
+                      </select>
+                    </label>
+                    <label className="settings-field">
+                      <span>{t("reminderSound")}</span>
+                      <select
+                        value={reminderSoundEnabled ? "on" : "off"}
+                        onChange={(event) => setReminderSoundEnabled(event.target.value === "on")}
+                      >
+                        <option value="on">{t("enabled")}</option>
+                        <option value="off">{t("ringtoneOff")}</option>
+                      </select>
+                    </label>
+                    <label className="settings-field">
+                      <span>{t("ringtone")}</span>
+                      <select value={reminderRingtone} onChange={(event) => setReminderRingtone(event.target.value)}>
+                        <option value="chime">{t("ringtoneChime")}</option>
+                        <option value="soft">{t("ringtoneSoft")}</option>
+                        <option value="digital">{t("ringtoneDigital")}</option>
+                        <option value="off">{t("ringtoneOff")}</option>
+                      </select>
+                    </label>
+                  </div>
+                </section>
+
+                <section className="history-panel">
+                  <h3>{t("historyTitle")}</h3>
+                  <p className="soft history-count">{t("historyCount", { count: activeHistoryEntries.length })}</p>
+                  <div className="segmented history-segmented">
+                    <button className={historyFilter === "journal" ? "active" : ""} onClick={() => setHistoryFilter("journal")}>
+                      {t("historyJournal")}
+                    </button>
+                    <button className={historyFilter === "reminder" ? "active" : ""} onClick={() => setHistoryFilter("reminder")}>
+                      {t("historyReminder")}
+                    </button>
+                    <button className={historyFilter === "mood" ? "active" : ""} onClick={() => setHistoryFilter("mood")}>
+                      {t("historyMood")}
+                    </button>
+                    <button className={historyFilter === "favorite" ? "active" : ""} onClick={() => setHistoryFilter("favorite")}>
+                      {t("historyFavorite")}
+                    </button>
+                  </div>
+
+                  {activeHistoryEntries.length === 0 ? (
+                    <p className="soft">{t("historyEmpty")}</p>
+                  ) : (
+                    <div className="history-list">
+                      {activeHistoryEntries.slice(0, 120).map((entry) => (
+                        <article className="history-item" key={`history-${historyFilter}-${entry.id}`}>
+                          <button className="linkish" onClick={() => openEditor(entry.dateISO)}>
+                            {formatDateFr(entry.dateISO)}
+                          </button>
+                          <p className="soft">
+                            {t("moodLabel", { emoji: moodToEmoji(entry.mood) })} · {t("reminderCount", { count: entry.reminders?.length || 0 })}
+                          </p>
+                          <p>{entry.text?.trim() ? entry.text.slice(0, 180) : t("entryWithoutText")}</p>
+                        </article>
                       ))}
-                    </select>
-                  </label>
-                  <label className="settings-field">
-                    <span>{t("theme")}</span>
-                    <select value={themeMode} onChange={(event) => setThemeMode(event.target.value)}>
-                      <option value="light">{t("themeLight")}</option>
-                      <option value="dark">{t("themeDark")}</option>
-                    </select>
-                  </label>
-                  <label className="settings-field">
-                    <span>{t("reminderSound")}</span>
-                    <select
-                      value={reminderSoundEnabled ? "on" : "off"}
-                      onChange={(event) => setReminderSoundEnabled(event.target.value === "on")}
-                    >
-                      <option value="on">{t("enabled")}</option>
-                      <option value="off">{t("ringtoneOff")}</option>
-                    </select>
-                  </label>
-                  <label className="settings-field">
-                    <span>{t("ringtone")}</span>
-                    <select value={reminderRingtone} onChange={(event) => setReminderRingtone(event.target.value)}>
-                      <option value="chime">{t("ringtoneChime")}</option>
-                      <option value="soft">{t("ringtoneSoft")}</option>
-                      <option value="digital">{t("ringtoneDigital")}</option>
-                      <option value="off">{t("ringtoneOff")}</option>
-                    </select>
-                  </label>
-                </div>
+                    </div>
+                  )}
+                </section>
               </section>
 
               <section className="profile-action-grid">
@@ -1166,42 +1233,6 @@ function App() {
                     {t("lock")}
                   </button>
                 ) : null}
-              </section>
-
-              <section className="history-panel">
-                <h3>{t("historyTitle")}</h3>
-                <div className="segmented history-segmented">
-                  <button className={historyFilter === "journal" ? "active" : ""} onClick={() => setHistoryFilter("journal")}>
-                    {t("historyJournal")}
-                  </button>
-                  <button className={historyFilter === "reminder" ? "active" : ""} onClick={() => setHistoryFilter("reminder")}>
-                    {t("historyReminder")}
-                  </button>
-                  <button className={historyFilter === "mood" ? "active" : ""} onClick={() => setHistoryFilter("mood")}>
-                    {t("historyMood")}
-                  </button>
-                  <button className={historyFilter === "favorite" ? "active" : ""} onClick={() => setHistoryFilter("favorite")}>
-                    {t("historyFavorite")}
-                  </button>
-                </div>
-
-                {activeHistoryEntries.length === 0 ? (
-                  <p className="soft">{t("historyEmpty")}</p>
-                ) : (
-                  <div className="history-list">
-                    {activeHistoryEntries.slice(0, 120).map((entry) => (
-                      <article className="history-item" key={`history-${historyFilter}-${entry.id}`}>
-                        <button className="linkish" onClick={() => openEditor(entry.dateISO)}>
-                          {formatDateFr(entry.dateISO)}
-                        </button>
-                        <p className="soft">
-                          {t("moodLabel", { emoji: moodToEmoji(entry.mood) })} · {t("reminderCount", { count: entry.reminders?.length || 0 })}
-                        </p>
-                        <p>{entry.text?.trim() ? entry.text.slice(0, 180) : t("entryWithoutText")}</p>
-                      </article>
-                    ))}
-                  </div>
-                )}
               </section>
 
               {securityOpen ? (

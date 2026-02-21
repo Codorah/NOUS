@@ -216,6 +216,123 @@ const MESSAGE_CLOSINGS = [
   "Tu as le droit de croire en ton retour a la lumiere."
 ];
 
+const MESSAGE_COMPONENTS_BY_LANGUAGE = {
+  fr: {
+    openings: MESSAGE_OPENINGS,
+    acknowledgements: MESSAGE_EMOTION_ACKNOWLEDGEMENTS,
+    autonomy: MESSAGE_AUTONOMY_REFRAMES,
+    selfCare: MESSAGE_SELF_CARE_ACTIONS,
+    support: MESSAGE_SUPPORT_REMINDERS,
+    closings: MESSAGE_CLOSINGS,
+    fallbackTemplate:
+      "Tu es digne d'amour et de soutien. Un pas conscient aujourd'hui peut ouvrir un espace meilleur demain. Message {index}."
+  },
+  en: {
+    openings: [
+      "Today, your heart deserves gentle words.",
+      "This morning, you can talk to yourself with respect.",
+      "You do not need to prove anything to deserve care.",
+      "Your value is still whole, even on heavy days.",
+      "Start by treating yourself like someone you love.",
+      "You can move forward without hurting yourself."
+    ],
+    acknowledgements: [
+      "If sadness is here, it deserves to be heard.",
+      "If your mind feels noisy, return to one calm breath.",
+      "If everything feels heavy, choose one tiny next step.",
+      "If motivation is low, begin before you feel ready.",
+      "If your thoughts get dark, ask for support now.",
+      "If anxiety rises, come back to the present moment."
+    ],
+    autonomy: [
+      "You can choose boundaries that protect your peace.",
+      "You can turn pressure into a simple plan.",
+      "You can choose consistency over perfection.",
+      "You can rebuild your stability one step at a time.",
+      "You can respect your needs without guilt.",
+      "You can stay loyal to yourself today."
+    ],
+    selfCare: [
+      "Drink water, then write three honest lines about how you feel.",
+      "Take a 10-minute walk to reset your nervous system.",
+      "Set a 5-minute timer and start the smallest task.",
+      "Eat something nourishing before continuing.",
+      "Step away from your screen for one minute.",
+      "Do the smallest version of what you are avoiding."
+    ],
+    support: [
+      "Asking for help does not weaken you, it strengthens you.",
+      "You do not have to carry everything alone.",
+      "Professional support can make a real difference.",
+      "If symptoms last, reach out to a mental-health professional.",
+      "If you feel in danger, contact 988 or local emergency services now.",
+      "Human connection is a real protective factor."
+    ],
+    closings: [
+      "You are progressing more than you think.",
+      "Your future can still shift in your favor.",
+      "Your gentle consistency is real strength.",
+      "You are allowed to be proud of small steps.",
+      "Nothing is fixed, especially not you.",
+      "Thank you for not giving up on yourself today."
+    ],
+    fallbackTemplate:
+      "You are worthy of love and support. One intentional step today can open a better tomorrow. Message {index}."
+  },
+  es: {
+    openings: [
+      "Hoy, tu corazón merece palabras amables.",
+      "Esta mañana puedes hablarte con respeto.",
+      "No tienes que demostrar nada para merecer cuidado.",
+      "Tu valor sigue intacto, incluso en días pesados.",
+      "Empieza tratándote como a alguien que amas.",
+      "Puedes avanzar sin castigarte."
+    ],
+    acknowledgements: [
+      "Si la tristeza está aquí, merece ser escuchada.",
+      "Si tu mente está ruidosa, vuelve a una respiración calma.",
+      "Si todo pesa, elige un paso muy pequeño.",
+      "Si falta motivación, empieza antes de sentirte listo.",
+      "Si tus pensamientos se oscurecen, busca apoyo ahora.",
+      "Si sube la ansiedad, vuelve al momento presente."
+    ],
+    autonomy: [
+      "Puedes elegir límites que protejan tu paz.",
+      "Puedes transformar presión en un plan simple.",
+      "Puedes elegir constancia en lugar de perfección.",
+      "Puedes reconstruir tu estabilidad paso a paso.",
+      "Puedes respetar tus necesidades sin culpa.",
+      "Hoy puedes mantenerte fiel a ti."
+    ],
+    selfCare: [
+      "Bebe agua y escribe tres líneas sinceras sobre cómo te sientes.",
+      "Haz una caminata de 10 minutos para reiniciar tu sistema nervioso.",
+      "Pon un temporizador de 5 minutos y empieza la tarea mínima.",
+      "Come algo nutritivo antes de continuar.",
+      "Haz una pausa de pantalla por un minuto.",
+      "Haz la versión más pequeña de eso que estás evitando."
+    ],
+    support: [
+      "Pedir ayuda no te debilita, te fortalece.",
+      "No tienes que cargar todo en soledad.",
+      "El apoyo profesional puede marcar una gran diferencia.",
+      "Si los síntomas duran, consulta a un profesional de salud mental.",
+      "Si te sientes en peligro, contacta servicios de emergencia ahora.",
+      "La conexión humana es un factor real de protección."
+    ],
+    closings: [
+      "Estás avanzando más de lo que crees.",
+      "Tu futuro aún puede cambiar a tu favor.",
+      "Tu constancia amable es una fuerza real.",
+      "Puedes sentir orgullo por pasos pequeños.",
+      "Nada está totalmente fijado, tampoco tú.",
+      "Gracias por no abandonarte hoy."
+    ],
+    fallbackTemplate:
+      "Eres digno/a de amor y apoyo. Un paso consciente hoy puede abrir un mejor mañana. Mensaje {index}."
+  }
+};
+
 function createSeededRng(seed) {
   let state = seed >>> 0;
 
@@ -230,43 +347,54 @@ function pickRandom(collection, random) {
   return collection[index];
 }
 
-function buildSelfLoveMessage(random) {
+function buildSelfLoveMessage(random, components) {
   return [
-    pickRandom(MESSAGE_OPENINGS, random),
-    pickRandom(MESSAGE_EMOTION_ACKNOWLEDGEMENTS, random),
-    pickRandom(MESSAGE_AUTONOMY_REFRAMES, random),
-    pickRandom(MESSAGE_SELF_CARE_ACTIONS, random),
-    pickRandom(MESSAGE_SUPPORT_REMINDERS, random),
-    pickRandom(MESSAGE_CLOSINGS, random)
+    pickRandom(components.openings, random),
+    pickRandom(components.acknowledgements, random),
+    pickRandom(components.autonomy, random),
+    pickRandom(components.selfCare, random),
+    pickRandom(components.support, random),
+    pickRandom(components.closings, random)
   ]
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function buildMessageLibrary(size = MESSAGE_LIBRARY_SIZE) {
-  const random = createSeededRng(MESSAGE_LIBRARY_SEED);
+function resolveMessageLanguage(language) {
+  return MESSAGE_COMPONENTS_BY_LANGUAGE[language] ? language : "fr";
+}
+
+function buildMessageLibrary(size = MESSAGE_LIBRARY_SIZE, language = "fr") {
+  const resolvedLanguage = resolveMessageLanguage(language);
+  const components = MESSAGE_COMPONENTS_BY_LANGUAGE[resolvedLanguage];
+  const languageOffset = resolvedLanguage
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+  const random = createSeededRng(MESSAGE_LIBRARY_SEED + languageOffset * 997);
   const uniqueMessages = new Set();
   const maxAttempts = size * 80;
   let attempts = 0;
 
   while (uniqueMessages.size < size && attempts < maxAttempts) {
-    uniqueMessages.add(buildSelfLoveMessage(random));
+    uniqueMessages.add(buildSelfLoveMessage(random, components));
     attempts += 1;
   }
 
   if (uniqueMessages.size < size) {
     while (uniqueMessages.size < size) {
-      uniqueMessages.add(
-        `Tu es digne d'amour et de soutien. Un pas conscient aujourd'hui peut ouvrir un espace meilleur demain. Message ${uniqueMessages.size + 1}.`
-      );
+      uniqueMessages.add(components.fallbackTemplate.replace("{index}", String(uniqueMessages.size + 1)));
     }
   }
 
   return Array.from(uniqueMessages);
 }
 
-const MESSAGE_LIBRARY = buildMessageLibrary();
+const MESSAGE_LIBRARY_BY_LANGUAGE = {
+  fr: buildMessageLibrary(MESSAGE_LIBRARY_SIZE, "fr"),
+  en: buildMessageLibrary(MESSAGE_LIBRARY_SIZE, "en"),
+  es: buildMessageLibrary(MESSAGE_LIBRARY_SIZE, "es")
+};
 
 export const MAX_MEDIA_BYTES = 1200000;
 export const MAX_MEDIA_PER_ENTRY = 4;
@@ -397,39 +525,46 @@ function getClientMessageOffset() {
   }
 
   const clientId = getOrCreateClientMessageId();
-  cachedClientMessageOffset = hashStringStable(clientId) % MESSAGE_LIBRARY.length;
+  cachedClientMessageOffset = hashStringStable(clientId) % MESSAGE_LIBRARY_SIZE;
   return cachedClientMessageOffset;
 }
 
-function getStableMessageIndex(date, clientOffset = getClientMessageOffset()) {
+function getStableMessageIndex(date, clientOffset = getClientMessageOffset(), librarySize = MESSAGE_LIBRARY_SIZE) {
   const startUtc = Date.UTC(MESSAGE_HORIZON_START_YEAR, 0, 1);
   const endUtc = Date.UTC(MESSAGE_HORIZON_START_YEAR + MESSAGE_HORIZON_YEARS, 0, 1);
   const dateUtc = toUtcMidnight(date);
 
   if (dateUtc >= startUtc && dateUtc < endUtc) {
     const dayOffset = Math.floor((dateUtc - startUtc) / MS_PER_DAY);
-    return positiveModulo(dayOffset + clientOffset, MESSAGE_LIBRARY.length);
+    return positiveModulo(dayOffset + clientOffset, librarySize);
   }
 
   const fallbackSeed = date.getFullYear() * 379 + getDayOfYear(date) * 41 + clientOffset * 17;
-  return positiveModulo(fallbackSeed, MESSAGE_LIBRARY.length);
+  return positiveModulo(fallbackSeed, librarySize);
+}
+
+function getMessageLibrary(language = "fr") {
+  const resolvedLanguage = resolveMessageLanguage(language);
+  return MESSAGE_LIBRARY_BY_LANGUAGE[resolvedLanguage] || MESSAGE_LIBRARY_BY_LANGUAGE.fr;
 }
 
 export function getMotivationalLibraryInfo() {
   return {
-    size: MESSAGE_LIBRARY.length,
+    size: MESSAGE_LIBRARY_SIZE,
     startYear: MESSAGE_HORIZON_START_YEAR,
-    endYearInclusive: MESSAGE_HORIZON_START_YEAR + MESSAGE_HORIZON_YEARS - 1
+    endYearInclusive: MESSAGE_HORIZON_START_YEAR + MESSAGE_HORIZON_YEARS - 1,
+    languages: Object.keys(MESSAGE_LIBRARY_BY_LANGUAGE)
   };
 }
 
-export function buildMotivationalMessage(dateKey, profileName = "") {
+export function buildMotivationalMessage(dateKey, profileName = "", language = "fr") {
   const date = parseDateKey(dateKey);
-  const messageIndex = getStableMessageIndex(date, getClientMessageOffset());
-  const baseMessage = MESSAGE_LIBRARY[messageIndex];
+  const messageLibrary = getMessageLibrary(language);
+  const messageIndex = getStableMessageIndex(date, getClientMessageOffset(), messageLibrary.length);
+  const baseMessage = messageLibrary[messageIndex];
   const name = normalizeProfileName(profileName);
 
-  if (name === "toi") {
+  if (!profileName || !String(profileName).trim()) {
     return baseMessage;
   }
 
