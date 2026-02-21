@@ -1141,6 +1141,10 @@ textarea {
     position: relative;
     top: 0;
   }
+
+  .profile-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1287,6 +1291,15 @@ textarea {
   .settings-grid {
     grid-template-columns: 1fr;
   }
+
+  .profile-hero-main {
+    align-items: flex-start;
+  }
+
+  .profile-hero-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 560px) {
@@ -1358,6 +1371,10 @@ textarea {
 
   .profile-chip-wide input {
     max-width: none;
+  }
+
+  .profile-hero-metrics {
+    grid-template-columns: 1fr;
   }
 }
 

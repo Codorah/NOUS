@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = "journal-infinite-v2";
+﻿const CACHE_NAME = "journal-infinite-v3";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -74,4 +74,5 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+
 
