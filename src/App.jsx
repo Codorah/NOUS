@@ -141,6 +141,232 @@ function buildReadableJournalMarkdown(entries, profileName) {
   return `${lines.join("\n")}\n`;
 }
 
+const LANGUAGE_OPTIONS = [
+  { value: "fr", label: "Français" },
+  { value: "en", label: "English" },
+  { value: "es", label: "Español" }
+];
+
+const UI_TEXT = {
+  fr: {
+    appTaglineCalendar: "Calendrier d'abord. Profil et réglages sur une page séparée.",
+    appTaglineProfile: "Espace profil: statistiques, sécurité et préférences.",
+    openToday: "Ouvrir aujourd'hui",
+    backCalendar: "Retour calendrier",
+    profileSpace: "Espace profil",
+    calendar: "Calendrier",
+    timeline: "Timeline",
+    yearMinus: "Année -1",
+    yearPlus: "Année +1",
+    today: "Aujourd'hui",
+    timelineEmptyTitle: "Ta timeline est vide",
+    timelineEmptyText: "Ajoute une première entrée depuis la vue calendrier.",
+    profileTitle: "Espace profil",
+    firstName: "Prénom",
+    firstNamePlaceholder: "Ton prénom",
+    statsJourney: "Parcours annuel",
+    statsMood: "Humeur moyenne",
+    statsFavorites: "Favoris & Rappels",
+    noData: "Aucune donnée",
+    legendFavorite: "❤️ Favori",
+    legendJournal: "📝 Journal",
+    legendReminder: "🔔 Rappel actif",
+    legendMood: "🙂 Humeur",
+    goCalendar: "Voir calendrier",
+    goTimeline: "Voir timeline",
+    downloadJournal: "Télécharger mon journal",
+    security: "Sécurité",
+    lock: "Verrouiller",
+    notificationsStatus: "Statut notifications",
+    dailyMessageAt: "Message quotidien",
+    historyTitle: "Historique personnel",
+    historyJournal: "Journal",
+    historyReminder: "Rappels",
+    historyMood: "Humeur",
+    historyFavorite: "Favoris",
+    historyEmpty: "Aucun élément dans cette catégorie.",
+    entryWithoutText: "(Entrée sans texte)",
+    reminderCount: "{count} rappel(s)",
+    moodLabel: "Humeur: {emoji}",
+    settingsTitle: "Préférences de l'app",
+    language: "Langue",
+    theme: "Thème",
+    themeLight: "Clair",
+    themeDark: "Sombre",
+    enabled: "Activée",
+    reminderSound: "Son rappel (app ouverte)",
+    ringtone: "Sonnerie",
+    ringtoneChime: "Cloche",
+    ringtoneSoft: "Douce",
+    ringtoneDigital: "Digitale",
+    ringtoneOff: "Désactivée",
+    mobileNavCalendar: "Calendrier",
+    mobileNavProfile: "Profil",
+    mobileNavToday: "Aujourd'hui"
+  },
+  en: {
+    appTaglineCalendar: "Calendar first. Profile and settings are on a separate page.",
+    appTaglineProfile: "Profile area: stats, security, and preferences.",
+    openToday: "Open today",
+    backCalendar: "Back to calendar",
+    profileSpace: "Profile space",
+    calendar: "Calendar",
+    timeline: "Timeline",
+    yearMinus: "Year -1",
+    yearPlus: "Year +1",
+    today: "Today",
+    timelineEmptyTitle: "Your timeline is empty",
+    timelineEmptyText: "Add your first entry from calendar view.",
+    profileTitle: "Profile space",
+    firstName: "First name",
+    firstNamePlaceholder: "Your first name",
+    statsJourney: "Year progress",
+    statsMood: "Average mood",
+    statsFavorites: "Favorites & Reminders",
+    noData: "No data",
+    legendFavorite: "❤️ Favorite",
+    legendJournal: "📝 Journal",
+    legendReminder: "🔔 Active reminder",
+    legendMood: "🙂 Mood",
+    goCalendar: "Open calendar",
+    goTimeline: "Open timeline",
+    downloadJournal: "Download my journal",
+    security: "Security",
+    lock: "Lock",
+    notificationsStatus: "Notifications status",
+    dailyMessageAt: "Daily message",
+    historyTitle: "Personal history",
+    historyJournal: "Journal",
+    historyReminder: "Reminders",
+    historyMood: "Mood",
+    historyFavorite: "Favorites",
+    historyEmpty: "No items in this category.",
+    entryWithoutText: "(Entry without text)",
+    reminderCount: "{count} reminder(s)",
+    moodLabel: "Mood: {emoji}",
+    settingsTitle: "App preferences",
+    language: "Language",
+    theme: "Theme",
+    themeLight: "Light",
+    themeDark: "Dark",
+    enabled: "Enabled",
+    reminderSound: "Reminder sound (app open)",
+    ringtone: "Ringtone",
+    ringtoneChime: "Chime",
+    ringtoneSoft: "Soft",
+    ringtoneDigital: "Digital",
+    ringtoneOff: "Disabled",
+    mobileNavCalendar: "Calendar",
+    mobileNavProfile: "Profile",
+    mobileNavToday: "Today"
+  },
+  es: {
+    appTaglineCalendar: "Primero el calendario. Perfil y ajustes en una página separada.",
+    appTaglineProfile: "Espacio de perfil: estadísticas, seguridad y preferencias.",
+    openToday: "Abrir hoy",
+    backCalendar: "Volver al calendario",
+    profileSpace: "Espacio perfil",
+    calendar: "Calendario",
+    timeline: "Timeline",
+    yearMinus: "Año -1",
+    yearPlus: "Año +1",
+    today: "Hoy",
+    timelineEmptyTitle: "Tu timeline está vacía",
+    timelineEmptyText: "Agrega tu primera entrada desde la vista calendario.",
+    profileTitle: "Espacio perfil",
+    firstName: "Nombre",
+    firstNamePlaceholder: "Tu nombre",
+    statsJourney: "Progreso anual",
+    statsMood: "Estado de ánimo promedio",
+    statsFavorites: "Favoritos y recordatorios",
+    noData: "Sin datos",
+    legendFavorite: "❤️ Favorito",
+    legendJournal: "📝 Diario",
+    legendReminder: "🔔 Recordatorio activo",
+    legendMood: "🙂 Ánimo",
+    goCalendar: "Ver calendario",
+    goTimeline: "Ver timeline",
+    downloadJournal: "Descargar mi diario",
+    security: "Seguridad",
+    lock: "Bloquear",
+    notificationsStatus: "Estado notificaciones",
+    dailyMessageAt: "Mensaje diario",
+    historyTitle: "Historial personal",
+    historyJournal: "Diario",
+    historyReminder: "Recordatorios",
+    historyMood: "Ánimo",
+    historyFavorite: "Favoritos",
+    historyEmpty: "No hay elementos en esta categoría.",
+    entryWithoutText: "(Entrada sin texto)",
+    reminderCount: "{count} recordatorio(s)",
+    moodLabel: "Ánimo: {emoji}",
+    settingsTitle: "Preferencias de la app",
+    language: "Idioma",
+    theme: "Tema",
+    themeLight: "Claro",
+    themeDark: "Oscuro",
+    enabled: "Activado",
+    reminderSound: "Sonido de recordatorio (app abierta)",
+    ringtone: "Tono",
+    ringtoneChime: "Campana",
+    ringtoneSoft: "Suave",
+    ringtoneDigital: "Digital",
+    ringtoneOff: "Desactivado",
+    mobileNavCalendar: "Calendario",
+    mobileNavProfile: "Perfil",
+    mobileNavToday: "Hoy"
+  }
+};
+
+function resolveText(language, key, vars = {}) {
+  const dictionary = UI_TEXT[language] || UI_TEXT.fr;
+  const template = dictionary[key] || UI_TEXT.fr[key] || key;
+  return template.replace(/\{(\w+)\}/g, (_, token) => String(vars[token] ?? ""));
+}
+
+function playReminderTone(ringtone) {
+  if (!ringtone || ringtone === "off" || typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      return;
+    }
+
+    const context = new AudioContextClass();
+    const now = context.currentTime;
+    const sequence =
+      ringtone === "digital"
+        ? [990, 660, 990]
+        : ringtone === "soft"
+          ? [523.25, 659.25, 783.99]
+          : [659.25, 783.99, 987.77];
+
+    sequence.forEach((frequency, index) => {
+      const startTime = now + index * 0.14;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = ringtone === "digital" ? "square" : "sine";
+      oscillator.frequency.setValueAtTime(frequency, startTime);
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.08, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.12);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + 0.13);
+    });
+
+    setTimeout(() => {
+      context.close().catch(() => {});
+    }, 1400);
+  } catch (error) {
+    // Ignore: tone playback is best-effort.
+  }
+}
+
 function App() {
   const todayKey = formatDateKey(new Date());
   const [entries, setEntries] = useState(() => loadEntries());
@@ -154,7 +380,36 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [autoSaveInfo, setAutoSaveInfo] = useState("");
   const [profileName, setProfileName] = useState(() => loadProfileName());
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeScreen, setActiveScreen] = useState("calendar");
+  const [historyFilter, setHistoryFilter] = useState("journal");
+  const [themeMode, setThemeMode] = useState(() => {
+    try {
+      return localStorage.getItem("nous.theme") || "light";
+    } catch (error) {
+      return "light";
+    }
+  });
+  const [appLanguage, setAppLanguage] = useState(() => {
+    try {
+      return localStorage.getItem("nous.language") || "fr";
+    } catch (error) {
+      return "fr";
+    }
+  });
+  const [reminderSoundEnabled, setReminderSoundEnabled] = useState(() => {
+    try {
+      return localStorage.getItem("nous.reminder.sound.enabled") !== "0";
+    } catch (error) {
+      return true;
+    }
+  });
+  const [reminderRingtone, setReminderRingtone] = useState(() => {
+    try {
+      return localStorage.getItem("nous.reminder.ringtone") || "chime";
+    } catch (error) {
+      return "chime";
+    }
+  });
 
   const [notificationPermission, setNotificationPermission] = useState(() => {
     if (typeof Notification === "undefined") {
@@ -188,6 +443,18 @@ function App() {
   const generatedMessage = buildMotivationalMessage(activeDateKey, profileName);
   const dayMessage = draft.customMessage.trim() || generatedMessage;
   const dailyNotificationInfo = getDailyMotivationScheduleInfo();
+  const t = (key, vars) => resolveText(appLanguage, key, vars);
+  const historyBuckets = useMemo(() => {
+    const journal = timelineEntries.filter(
+      (entry) => Boolean(entry.text?.trim()) || (Array.isArray(entry.media) && entry.media.length > 0)
+    );
+    const reminder = timelineEntries.filter((entry) => Array.isArray(entry.reminders) && entry.reminders.length > 0);
+    const mood = timelineEntries.filter((entry) => typeof entry.mood === "number");
+    const favorite = timelineEntries.filter((entry) => Boolean(entry.favorite));
+
+    return { journal, reminder, mood, favorite };
+  }, [timelineEntries]);
+  const activeHistoryEntries = historyBuckets[historyFilter] || [];
 
   function openEditor(dateKey) {
     const existing = entries[dateKey];
@@ -211,6 +478,7 @@ function App() {
     setStatusMessage("");
     setErrorMessage("");
     setAutoSaveInfo("");
+    setActiveScreen("calendar");
     setEditorOpen(true);
   }
 
@@ -219,25 +487,44 @@ function App() {
   }, [profileName]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return undefined;
+    try {
+      localStorage.setItem("nous.theme", themeMode);
+    } catch (error) {
+      // Ignore persistence errors.
     }
 
-    const mediaQuery = window.matchMedia("(min-width: 761px)");
-    const handleChange = (event) => {
-      if (event.matches) {
-        setMobileMenuOpen(false);
-      }
-    };
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", themeMode === "dark" ? "dark" : "light");
+    }
+  }, [themeMode]);
 
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
+  useEffect(() => {
+    try {
+      localStorage.setItem("nous.language", appLanguage);
+    } catch (error) {
+      // Ignore persistence errors.
     }
 
-    mediaQuery.addListener(handleChange);
-    return () => mediaQuery.removeListener(handleChange);
-  }, []);
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("lang", appLanguage);
+    }
+  }, [appLanguage]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("nous.reminder.sound.enabled", reminderSoundEnabled ? "1" : "0");
+    } catch (error) {
+      // Ignore persistence errors.
+    }
+  }, [reminderSoundEnabled]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("nous.reminder.ringtone", reminderRingtone);
+    } catch (error) {
+      // Ignore persistence errors.
+    }
+  }, [reminderRingtone]);
 
   useEffect(() => {
     if (!editorOpen) {
@@ -260,6 +547,10 @@ function App() {
         const dueAlerts = collectDueReminderAlerts(previous, new Date());
         if (!dueAlerts.length) {
           return previous;
+        }
+
+        if (reminderSoundEnabled && typeof document !== "undefined" && document.visibilityState === "visible") {
+          playReminderTone(reminderRingtone);
         }
 
         if (notificationPermission === "granted") {
@@ -290,9 +581,32 @@ function App() {
     };
 
     runNotificationCycle();
-    const timer = setInterval(runNotificationCycle, 60000);
-    return () => clearInterval(timer);
-  }, [dailyNotificationInfo.hour, notificationPermission, profileName]);
+    const timer = setInterval(runNotificationCycle, 30000);
+
+    const handleVisibility = () => {
+      if (typeof document === "undefined" || document.visibilityState === "visible") {
+        runNotificationCycle();
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibility);
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", runNotificationCycle);
+    }
+
+    return () => {
+      clearInterval(timer);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibility);
+      }
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", runNotificationCycle);
+      }
+    };
+  }, [dailyNotificationInfo.hour, notificationPermission, profileName, reminderRingtone, reminderSoundEnabled]);
 
   async function handleSaveEntry() {
     setSaving(true);
@@ -582,272 +896,388 @@ function App() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
+      <header className="topbar topbar-minimal">
         <div className="topbar-title">
           <h1>NOUS {selectedYear}</h1>
-          <p>Compagnon quotidien: motivation, journal intime, rappels et humeur.</p>
+          <p>
+            {activeScreen === "calendar"
+              ? t("appTaglineCalendar")
+              : t("appTaglineProfile")}
+          </p>
         </div>
 
-        <button
-          type="button"
-          className={`menu-toggle ${mobileMenuOpen ? "open" : ""}`}
-          aria-expanded={mobileMenuOpen}
-          aria-controls="topbar-actions-menu"
-          onClick={() => setMobileMenuOpen((previous) => !previous)}
-        >
-          <span className="menu-toggle-bars" aria-hidden="true">
-            <span className="menu-toggle-bar" />
-            <span className="menu-toggle-bar" />
-            <span className="menu-toggle-bar" />
-          </span>
-          <span className="menu-toggle-text">{mobileMenuOpen ? "Fermer" : "Menu"}</span>
-        </button>
-
-        <div id="topbar-actions-menu" className={`topbar-actions ${mobileMenuOpen ? "open" : ""}`}>
-          <label className="profile-chip" htmlFor="profile-name">
-            Prénom
-            <input
-              id="profile-name"
-              value={profileName}
-              onChange={(event) => setProfileName(event.target.value)}
-              placeholder="Ton prénom"
-              maxLength={30}
-            />
-          </label>
-
-          <div className="segmented">
-            <button
-              className={viewMode === "calendar" ? "active" : ""}
-              onClick={() => {
-                setViewMode("calendar");
-                setMobileMenuOpen(false);
-              }}
-            >
-              Calendrier
+        <div className="topbar-quick-actions">
+          {activeScreen === "calendar" ? (
+            <button className="btn" onClick={() => openEditor(todayKey)}>
+              {t("openToday")}
             </button>
-            <button
-              className={viewMode === "timeline" ? "active" : ""}
-              onClick={() => {
-                setViewMode("timeline");
-                setMobileMenuOpen(false);
-              }}
-            >
-              Timeline
+          ) : (
+            <button className="btn" onClick={() => setActiveScreen("calendar")}>
+              {t("backCalendar")}
             </button>
-          </div>
-
-          <button
-            className="btn"
-            onClick={() => {
-              handleExport();
-              setMobileMenuOpen(false);
-            }}
-          >
-            Telecharger mon journal
+          )}
+          <button className="btn btn-primary" onClick={() => setActiveScreen(activeScreen === "calendar" ? "profile" : "calendar")}>
+            {activeScreen === "calendar" ? t("profileSpace") : t("calendar")}
           </button>
-
-          <button
-            className="btn"
-            onClick={() => {
-              setSecurityOpen((prev) => !prev);
-              setMobileMenuOpen(false);
-            }}
-          >
-            Sécurité
-          </button>
-
-          {lockEnabled ? (
-            <button
-              className="btn"
-              onClick={() => {
-                setIsUnlocked(false);
-                setMobileMenuOpen(false);
-              }}
-            >
-              Verrouiller
-            </button>
-          ) : null}
         </div>
       </header>
 
-      <section className="stats-grid">
-        <article className="stat-card">
-          <h3>Parcours annuel</h3>
-          <p>{yearStats.daysWithJournal} / {yearStats.daysInYear} jours écrits</p>
-          <strong>{yearStats.completionRate}%</strong>
-        </article>
-        <article className="stat-card">
-          <h3>Humeur moyenne</h3>
-          <p>{yearStats.averageMood ? `${yearStats.averageMood} / 5` : "Aucune donnée"}</p>
-          <strong>{yearStats.averageMood ? moodToEmoji(Math.round(yearStats.averageMood)) : "-"}</strong>
-        </article>
-        <article className="stat-card">
-          <h3>Favoris & Rappels</h3>
-          <p>❤️ {yearStats.favoriteDays} jours favoris</p>
-          <p>🔔 {yearStats.openReminders} rappels actifs</p>
-        </article>
-      </section>
-
-      <section className="toolbar">
-        <button className="btn" onClick={() => setSelectedYear((year) => year - 1)}>
-          Année -1
-        </button>
-        <button className="btn" onClick={() => setSelectedYear(new Date().getFullYear())}>
-          Aujourd'hui
-        </button>
-        <button className="btn" onClick={() => setSelectedYear((year) => year + 1)}>
-          Année +1
-        </button>
-
-        <button className="btn" onClick={() => openEditor(todayKey)}>
-          Ouvrir aujourd'hui
-        </button>
-      </section>
-
-      <section className="calendar-legend" aria-label="Légende des indicateurs">
-        <span className="legend-pill">❤️ Favori</span>
-        <span className="legend-pill">📝 Journal</span>
-        <span className="legend-pill">🔔 Rappel actif</span>
-        <span className="legend-pill">🙂 Humeur</span>
-      </section>
-
-      {securityOpen ? (
-        <section className="security-panel">
-          <h2>Verrouillage par code (Web Crypto)</h2>
-          {!lockEnabled ? (
-            <div className="security-grid">
-              <input
-                type="password"
-                inputMode="numeric"
-                value={newPin}
-                onChange={(event) => setNewPin(event.target.value)}
-                placeholder="Nouveau code"
-              />
-              <input
-                type="password"
-                inputMode="numeric"
-                value={confirmPin}
-                onChange={(event) => setConfirmPin(event.target.value)}
-                placeholder="Confirmer le code"
-              />
-              <button className="btn btn-primary" onClick={handleEnableLock}>
-                Activer le verrouillage
+      {activeScreen === "calendar" ? (
+        <>
+          <section className="toolbar toolbar-main">
+            <button className="btn" onClick={() => setSelectedYear((year) => year - 1)}>
+              {t("yearMinus")}
+            </button>
+            <button className="btn" onClick={() => setSelectedYear(new Date().getFullYear())}>
+              {t("today")}
+            </button>
+            <button className="btn" onClick={() => setSelectedYear((year) => year + 1)}>
+              {t("yearPlus")}
+            </button>
+            <div className="segmented view-switch">
+              <button className={viewMode === "calendar" ? "active" : ""} onClick={() => setViewMode("calendar")}>
+                {t("calendar")}
+              </button>
+              <button className={viewMode === "timeline" ? "active" : ""} onClick={() => setViewMode("timeline")}>
+                {t("timeline")}
               </button>
             </div>
-          ) : (
-            <div className="security-grid">
-              <input
-                type="password"
-                inputMode="numeric"
-                value={removePin}
-                onChange={(event) => setRemovePin(event.target.value)}
-                placeholder="Code actuel"
-              />
-              <button className="btn" onClick={handleDisableLock}>
-                Désactiver le verrouillage
-              </button>
-            </div>
-          )}
-          {securityMessage ? <p>{securityMessage}</p> : null}
-          <p className="hint">Option cloud pro: branche Supabase ou Firebase pour sauvegarder sur plusieurs appareils.</p>
-        </section>
-      ) : null}
-
-      <main>
-        {viewMode === "calendar" ? (
-          <section className="calendar-grid">
-            {calendarMonths.map((month) => (
-              <article className="month-card" key={month.monthIndex}>
-                <h3>{month.monthName}</h3>
-                <div className="weekday-row">
-                  {CALENDAR_WEEKDAYS.map((weekday, index) => (
-                    <span key={`${month.monthName}-${index}`}>{weekday}</span>
-                  ))}
-                </div>
-
-                <div className="day-grid">
-                  {month.cells.map((cell, index) => {
-                    if (!cell) {
-                      return <span className="day-cell empty" key={`${month.monthName}-empty-${index}`} />;
-                    }
-
-                    return (
-                      <button
-                        key={cell.dateKey}
-                        className={`day-cell ${cell.hasEntry ? "has-entry" : ""} ${cell.isToday ? "is-today" : ""} ${
-                          cell.isPast ? "is-past" : ""
-                        }`}
-                        onClick={() => openEditor(cell.dateKey)}
-                        title={formatDateFr(cell.dateKey)}
-                      >
-                        <span className="day-number">{cell.day}</span>
-                        <span className="day-mood" aria-hidden="true" title="Humeur du jour">
-                          {cell.mood ? moodToEmoji(cell.mood) : "·"}
-                        </span>
-                        <span className="day-icons" aria-hidden="true">
-                          {cell.hasFavorite ? <span title="Favori">❤️</span> : <span className="ghost">·</span>}
-                          {cell.hasJournal ? <span title="Journal">📝</span> : <span className="ghost">·</span>}
-                          {cell.hasReminderActive ? <span title="Rappel actif">🔔</span> : <span className="ghost">·</span>}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </article>
-            ))}
           </section>
-        ) : (
-          <section className="timeline-grid">
-            {timelineEntries.length === 0 ? (
-              <article className="timeline-card empty-card">
-                <h3>Ta timeline est vide</h3>
-                <p>Ajoute une première entrée depuis la vue calendrier.</p>
-              </article>
-            ) : (
-              timelineEntries.map((entry) => {
-                const preview = entry.text.length > 170 ? `${entry.text.slice(0, 170)}...` : entry.text;
-                const weather = entry.metadata?.weather
-                  ? `${entry.metadata.weather.description} ${entry.metadata.weather.temperatureC ?? ""}°C`
-                  : "Météo indisponible";
-                const mediaItems = Array.isArray(entry.media) ? entry.media : [];
-                const mediaPreview = mediaItems.slice(0, 3);
-                const hiddenMediaCount = Math.max(0, mediaItems.length - mediaPreview.length);
 
-                return (
-                  <article className="timeline-card" key={entry.id}>
-                    <button className="linkish" onClick={() => openEditor(entry.dateISO)}>
-                      {formatDateFr(entry.dateISO)}
-                    </button>
-                    <p className="mood-line">Humeur: {moodToEmoji(entry.mood)}</p>
-                    <p>{preview || "(Entrée média sans texte)"}</p>
-                    {mediaPreview.length > 0 ? (
-                      <div className="timeline-media-grid">
-                        {mediaPreview.map((media, index) => (
-                          <article className="timeline-media-item" key={media.id || `${entry.id}-media-${index}`}>
-                            {String(media.type || "").startsWith("image/") ? (
-                              <img src={media.dataUrl} alt={media.name || "Photo du journal"} loading="lazy" />
-                            ) : (
-                              <video src={media.dataUrl} controls preload="metadata" playsInline muted />
-                            )}
-                          </article>
-                        ))}
-                        {hiddenMediaCount > 0 ? <div className="timeline-media-more">+{hiddenMediaCount}</div> : null}
-                      </div>
-                    ) : null}
-                    <div className="timeline-chip-row">
-                      <span className="timeline-chip">📍 {entry.metadata?.locationLabel || "Lieu indisponible"}</span>
-                      <span className="timeline-chip">🌤 {weather}</span>
-                      <span className="timeline-chip">📷 {mediaItems.length} média(s)</span>
-                      <span className="timeline-chip">{entry.favorite ? "❤️ Favori" : "🤍 Non favori"}</span>
-                      <span className="timeline-chip">🔔 {entry.reminders?.filter((item) => !item.done).length || 0} actif(s)</span>
+          <main>
+            {viewMode === "calendar" ? (
+              <section className="calendar-grid">
+                {calendarMonths.map((month) => (
+                  <article className="month-card" key={month.monthIndex}>
+                    <h3>{month.monthName}</h3>
+                    <div className="weekday-row">
+                      {CALENDAR_WEEKDAYS.map((weekday, index) => (
+                        <span key={`${month.monthName}-${index}`}>{weekday}</span>
+                      ))}
+                    </div>
+
+                    <div className="day-grid">
+                      {month.cells.map((cell, index) => {
+                        if (!cell) {
+                          return <span className="day-cell empty" key={`${month.monthName}-empty-${index}`} />;
+                        }
+
+                        return (
+                          <button
+                            key={cell.dateKey}
+                            className={`day-cell ${cell.hasEntry ? "has-entry" : ""} ${cell.isToday ? "is-today" : ""} ${
+                              cell.isPast ? "is-past" : ""
+                            }`}
+                            onClick={() => openEditor(cell.dateKey)}
+                            title={formatDateFr(cell.dateKey)}
+                          >
+                            <span className="day-number">{cell.day}</span>
+                            <span className="day-mood" aria-hidden="true" title="Humeur du jour">
+                              {cell.mood ? moodToEmoji(cell.mood) : "·"}
+                            </span>
+                            <span className="day-icons" aria-hidden="true">
+                              {cell.hasFavorite ? <span title="Favori">❤️</span> : <span className="ghost">·</span>}
+                              {cell.hasJournal ? <span title="Journal">📝</span> : <span className="ghost">·</span>}
+                              {cell.hasReminderActive ? <span title="Rappel actif">🔔</span> : <span className="ghost">·</span>}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </article>
-                );
-              })
+                ))}
+              </section>
+            ) : (
+              <section className="timeline-grid">
+                {timelineEntries.length === 0 ? (
+                  <article className="timeline-card empty-card">
+                    <h3>{t("timelineEmptyTitle")}</h3>
+                    <p>{t("timelineEmptyText")}</p>
+                  </article>
+                ) : (
+                  timelineEntries.map((entry) => {
+                    const preview = entry.text.length > 170 ? `${entry.text.slice(0, 170)}...` : entry.text;
+                    const weather = entry.metadata?.weather
+                      ? `${entry.metadata.weather.description} ${entry.metadata.weather.temperatureC ?? ""}°C`
+                      : "Météo indisponible";
+                    const mediaItems = Array.isArray(entry.media) ? entry.media : [];
+                    const mediaPreview = mediaItems.slice(0, 3);
+                    const hiddenMediaCount = Math.max(0, mediaItems.length - mediaPreview.length);
+
+                    return (
+                      <article className="timeline-card" key={entry.id}>
+                        <button className="linkish" onClick={() => openEditor(entry.dateISO)}>
+                          {formatDateFr(entry.dateISO)}
+                        </button>
+                        <p className="mood-line">{t("moodLabel", { emoji: moodToEmoji(entry.mood) })}</p>
+                        <p>{preview || "(Entrée média sans texte)"}</p>
+                        {mediaPreview.length > 0 ? (
+                          <div className="timeline-media-grid">
+                            {mediaPreview.map((media, index) => (
+                              <article className="timeline-media-item" key={media.id || `${entry.id}-media-${index}`}>
+                                {String(media.type || "").startsWith("image/") ? (
+                                  <img src={media.dataUrl} alt={media.name || "Photo du journal"} loading="lazy" />
+                                ) : (
+                                  <video src={media.dataUrl} controls preload="metadata" playsInline muted />
+                                )}
+                              </article>
+                            ))}
+                            {hiddenMediaCount > 0 ? <div className="timeline-media-more">+{hiddenMediaCount}</div> : null}
+                          </div>
+                        ) : null}
+                        <div className="timeline-chip-row">
+                          <span className="timeline-chip">📍 {entry.metadata?.locationLabel || "Lieu indisponible"}</span>
+                          <span className="timeline-chip">🌤 {weather}</span>
+                          <span className="timeline-chip">📷 {mediaItems.length} média(s)</span>
+                          <span className="timeline-chip">{entry.favorite ? "❤️ Favori" : "🤍 Non favori"}</span>
+                          <span className="timeline-chip">🔔 {entry.reminders?.filter((item) => !item.done).length || 0} actif(s)</span>
+                        </div>
+                      </article>
+                    );
+                  })
+                )}
+              </section>
             )}
+          </main>
+
+          <button className="floating-new" onClick={() => openEditor(todayKey)}>
+            + Aujourd'hui
+          </button>
+        </>
+      ) : (
+        <main className="profile-page">
+          <section className="profile-drawer">
+            <div className="profile-drawer-header">
+              <h2>{t("profileTitle")}</h2>
+            </div>
+
+            <div className="profile-drawer-body">
+              <label className="profile-chip profile-chip-wide" htmlFor="profile-name">
+                {t("firstName")}
+                <input
+                  id="profile-name"
+                  value={profileName}
+                  onChange={(event) => setProfileName(event.target.value)}
+                  placeholder={t("firstNamePlaceholder")}
+                  maxLength={30}
+                />
+              </label>
+
+              <section className="stats-grid profile-stats">
+                <article className="stat-card">
+                  <h3>{t("statsJourney")}</h3>
+                  <p>{yearStats.daysWithJournal} / {yearStats.daysInYear} jours écrits</p>
+                  <strong>{yearStats.completionRate}%</strong>
+                </article>
+                <article className="stat-card">
+                  <h3>{t("statsMood")}</h3>
+                  <p>{yearStats.averageMood ? `${yearStats.averageMood} / 5` : t("noData")}</p>
+                  <strong>{yearStats.averageMood ? moodToEmoji(Math.round(yearStats.averageMood)) : "-"}</strong>
+                </article>
+                <article className="stat-card">
+                  <h3>{t("statsFavorites")}</h3>
+                  <p>❤️ {yearStats.favoriteDays} jours favoris</p>
+                  <p>🔔 {yearStats.openReminders} rappels actifs</p>
+                </article>
+              </section>
+
+              <section className="calendar-legend" aria-label="Légende des indicateurs">
+                <span className="legend-pill">{t("legendFavorite")}</span>
+                <span className="legend-pill">{t("legendJournal")}</span>
+                <span className="legend-pill">{t("legendReminder")}</span>
+                <span className="legend-pill">{t("legendMood")}</span>
+              </section>
+
+              <section className="profile-settings">
+                <h3>{t("settingsTitle")}</h3>
+                <div className="settings-grid">
+                  <label className="settings-field">
+                    <span>{t("language")}</span>
+                    <select value={appLanguage} onChange={(event) => setAppLanguage(event.target.value)}>
+                      {LANGUAGE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="settings-field">
+                    <span>{t("theme")}</span>
+                    <select value={themeMode} onChange={(event) => setThemeMode(event.target.value)}>
+                      <option value="light">{t("themeLight")}</option>
+                      <option value="dark">{t("themeDark")}</option>
+                    </select>
+                  </label>
+                  <label className="settings-field">
+                    <span>{t("reminderSound")}</span>
+                    <select
+                      value={reminderSoundEnabled ? "on" : "off"}
+                      onChange={(event) => setReminderSoundEnabled(event.target.value === "on")}
+                    >
+                      <option value="on">{t("enabled")}</option>
+                      <option value="off">{t("ringtoneOff")}</option>
+                    </select>
+                  </label>
+                  <label className="settings-field">
+                    <span>{t("ringtone")}</span>
+                    <select value={reminderRingtone} onChange={(event) => setReminderRingtone(event.target.value)}>
+                      <option value="chime">{t("ringtoneChime")}</option>
+                      <option value="soft">{t("ringtoneSoft")}</option>
+                      <option value="digital">{t("ringtoneDigital")}</option>
+                      <option value="off">{t("ringtoneOff")}</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <section className="profile-action-grid">
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setViewMode("calendar");
+                    setActiveScreen("calendar");
+                  }}
+                >
+                  {t("goCalendar")}
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setViewMode("timeline");
+                    setActiveScreen("calendar");
+                  }}
+                >
+                  {t("goTimeline")}
+                </button>
+                <button className="btn" onClick={handleExport}>
+                  {t("downloadJournal")}
+                </button>
+                <button className="btn" onClick={() => setSecurityOpen((previous) => !previous)}>
+                  {t("security")}
+                </button>
+                {lockEnabled ? (
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      setIsUnlocked(false);
+                      setActiveScreen("calendar");
+                    }}
+                  >
+                    {t("lock")}
+                  </button>
+                ) : null}
+              </section>
+
+              <section className="history-panel">
+                <h3>{t("historyTitle")}</h3>
+                <div className="segmented history-segmented">
+                  <button className={historyFilter === "journal" ? "active" : ""} onClick={() => setHistoryFilter("journal")}>
+                    {t("historyJournal")}
+                  </button>
+                  <button className={historyFilter === "reminder" ? "active" : ""} onClick={() => setHistoryFilter("reminder")}>
+                    {t("historyReminder")}
+                  </button>
+                  <button className={historyFilter === "mood" ? "active" : ""} onClick={() => setHistoryFilter("mood")}>
+                    {t("historyMood")}
+                  </button>
+                  <button className={historyFilter === "favorite" ? "active" : ""} onClick={() => setHistoryFilter("favorite")}>
+                    {t("historyFavorite")}
+                  </button>
+                </div>
+
+                {activeHistoryEntries.length === 0 ? (
+                  <p className="soft">{t("historyEmpty")}</p>
+                ) : (
+                  <div className="history-list">
+                    {activeHistoryEntries.slice(0, 120).map((entry) => (
+                      <article className="history-item" key={`history-${historyFilter}-${entry.id}`}>
+                        <button className="linkish" onClick={() => openEditor(entry.dateISO)}>
+                          {formatDateFr(entry.dateISO)}
+                        </button>
+                        <p className="soft">
+                          {t("moodLabel", { emoji: moodToEmoji(entry.mood) })} · {t("reminderCount", { count: entry.reminders?.length || 0 })}
+                        </p>
+                        <p>{entry.text?.trim() ? entry.text.slice(0, 180) : t("entryWithoutText")}</p>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {securityOpen ? (
+                <section className="security-panel">
+                  <h2>Verrouillage par code (Web Crypto)</h2>
+                  {!lockEnabled ? (
+                    <div className="security-grid">
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        value={newPin}
+                        onChange={(event) => setNewPin(event.target.value)}
+                        placeholder="Nouveau code"
+                      />
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        value={confirmPin}
+                        onChange={(event) => setConfirmPin(event.target.value)}
+                        placeholder="Confirmer le code"
+                      />
+                      <button className="btn btn-primary" onClick={handleEnableLock}>
+                        Activer le verrouillage
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="security-grid">
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        value={removePin}
+                        onChange={(event) => setRemovePin(event.target.value)}
+                        placeholder="Code actuel"
+                      />
+                      <button className="btn" onClick={handleDisableLock}>
+                        Désactiver le verrouillage
+                      </button>
+                    </div>
+                  )}
+                  {securityMessage ? <p>{securityMessage}</p> : null}
+                  <p className="hint">Option cloud pro: branche Supabase ou Firebase pour sauvegarder sur plusieurs appareils.</p>
+                </section>
+              ) : null}
+
+              <section className="profile-note">
+                <p className="soft">{t("notificationsStatus")}: {notificationPermission}</p>
+                <p className="soft">{t("dailyMessageAt")}: {dailyNotificationInfo.label}</p>
+              </section>
+            </div>
           </section>
-        )}
-      </main>
+        </main>
+      )}
+
+      <nav className="mobile-bottom-nav" aria-label="Navigation mobile">
+        <button
+          className={`mobile-nav-btn ${activeScreen === "calendar" ? "active" : ""}`}
+          onClick={() => setActiveScreen("calendar")}
+        >
+          {t("mobileNavCalendar")}
+        </button>
+        <button
+          className={`mobile-nav-btn ${activeScreen === "profile" ? "active" : ""}`}
+          onClick={() => setActiveScreen("profile")}
+        >
+          {t("mobileNavProfile")}
+        </button>
+        <button
+          className="mobile-nav-btn"
+          onClick={() => {
+            setActiveScreen("calendar");
+            openEditor(todayKey);
+          }}
+        >
+          {t("mobileNavToday")}
+        </button>
+      </nav>
 
       <footer className="app-credit" aria-label="Informations developpeuse">
         <p className="app-credit-name">
@@ -859,10 +1289,6 @@ function App() {
           <a href="tel:+22871672565">+228 71 67 25 65</a>
         </p>
       </footer>
-
-      <button className="floating-new" onClick={() => openEditor(todayKey)}>
-        + Aujourd'hui
-      </button>
 
       {editorOpen ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
