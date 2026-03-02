@@ -409,6 +409,13 @@ export const MOOD_OPTIONS = [
 ];
 
 export const CALENDAR_WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
+export const HABIT_CATALOG = [
+  { id: "water", label: "Boire de l'eau", icon: "💧" },
+  { id: "sport", label: "Sport", icon: "🏃" },
+  { id: "meditation", label: "Méditation", icon: "🧘" },
+  { id: "reading", label: "Lecture", icon: "📚" }
+];
+const HABIT_IDS = HABIT_CATALOG.map((habit) => habit.id);
 
 export function createClientId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -615,11 +622,93 @@ function normalizeReminder(reminder, fallbackDateIso) {
   };
 }
 
+function clampNumber(value, minimum, maximum, fallback = minimum) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(maximum, Math.max(minimum, parsed));
+}
+
+function normalizeHabits(rawHabits) {
+  const source = rawHabits && typeof rawHabits === "object" ? rawHabits : {};
+
+  return HABIT_IDS.reduce((accumulator, id) => {
+    accumulator[id] = Boolean(source[id]);
+    return accumulator;
+  }, {});
+}
+
+function normalizeStickerItem(sticker) {
+  if (!sticker || typeof sticker !== "object") {
+    return null;
+  }
+
+  const emoji = typeof sticker.emoji === "string" ? sticker.emoji.trim() : "";
+  if (!emoji) {
+    return null;
+  }
+
+  return {
+    id: sticker.id || createClientId(),
+    emoji,
+    label: typeof sticker.label === "string" ? sticker.label : "",
+    x: clampNumber(sticker.x, 4, 96, 50),
+    y: clampNumber(sticker.y, 8, 92, 50),
+    rotate: clampNumber(sticker.rotate, -30, 30, 0)
+  };
+}
+
+function normalizeStickers(rawStickers) {
+  if (!Array.isArray(rawStickers)) {
+    return [];
+  }
+
+  return rawStickers.map((item) => normalizeStickerItem(item)).filter(Boolean);
+}
+
+function normalizeFutureMessage(message, fallbackDateIso) {
+  if (!message || typeof message !== "object") {
+    return null;
+  }
+
+  const text = typeof message.message === "string" ? message.message.trim() : "";
+  if (!text) {
+    return null;
+  }
+
+  const openDate = new Date(message.openOn);
+  if (Number.isNaN(openDate.getTime())) {
+    return null;
+  }
+
+  return {
+    id: message.id || createClientId(),
+    recipient: typeof message.recipient === "string" ? message.recipient.trim() : "",
+    message: text,
+    openOn: openDate.toISOString(),
+    createdAt: typeof message.createdAt === "string" ? message.createdAt : fallbackDateIso
+  };
+}
+
+function normalizeFutureMessages(rawMessages, fallbackDateIso) {
+  if (!Array.isArray(rawMessages)) {
+    return [];
+  }
+
+  return rawMessages
+    .map((message) => normalizeFutureMessage(message, fallbackDateIso))
+    .filter(Boolean)
+    .sort((left, right) => left.openOn.localeCompare(right.openOn));
+}
+
 function normalizeEntry(dateKey, rawEntry) {
   const fallbackDateIso = `${dateKey}T12:00:00.000Z`;
   const reminders = Array.isArray(rawEntry?.reminders)
     ? rawEntry.reminders.map((item) => normalizeReminder(item, fallbackDateIso)).filter((item) => item.title)
     : [];
+  const futureMessages = normalizeFutureMessages(rawEntry?.futureMessages, fallbackDateIso);
 
   return {
     id: rawEntry?.id || dateKey,
@@ -630,6 +719,10 @@ function normalizeEntry(dateKey, rawEntry) {
     prompt: typeof rawEntry?.prompt === "string" ? rawEntry.prompt : getPromptForDate(dateKey),
     customMessage: typeof rawEntry?.customMessage === "string" ? rawEntry.customMessage : "",
     reminders,
+    habits: normalizeHabits(rawEntry?.habits),
+    stickers: normalizeStickers(rawEntry?.stickers),
+    scrapbookText: typeof rawEntry?.scrapbookText === "string" ? rawEntry.scrapbookText : "",
+    futureMessages,
     favorite: Boolean(rawEntry?.favorite),
     metadata: rawEntry?.metadata || null,
     createdAt: typeof rawEntry?.createdAt === "string" ? rawEntry.createdAt : fallbackDateIso,
@@ -675,7 +768,7 @@ export function estimateStorageSize(entries) {
 
 export function exportEntries(entries) {
   const payload = {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     entries: listTimelineEntries(entries).reverse()
   };
@@ -700,11 +793,19 @@ function entryHasMeaningfulMood(entry) {
 }
 
 function entryHasMeaningfulContent(entry) {
+  const hasHabitProgress = HABIT_IDS.some((habitId) => Boolean(entry?.habits?.[habitId]));
+  const hasStickers = Array.isArray(entry?.stickers) && entry.stickers.length > 0;
+  const hasCapsule = Array.isArray(entry?.futureMessages) && entry.futureMessages.length > 0;
+
   return Boolean(
     entryHasJournal(entry) ||
       entryHasActiveReminder(entry) ||
       entry?.favorite ||
       entry?.customMessage?.trim() ||
+      entry?.scrapbookText?.trim() ||
+      hasHabitProgress ||
+      hasStickers ||
+      hasCapsule ||
       entryHasMeaningfulMood(entry)
   );
 }
@@ -770,6 +871,10 @@ export function createEmptyDraft(dateKey, previousEntry) {
     mood: normalized.mood,
     media: normalized.media,
     reminders: normalized.reminders,
+    habits: normalized.habits,
+    stickers: normalized.stickers,
+    scrapbookText: normalized.scrapbookText,
+    futureMessages: normalized.futureMessages,
     favorite: normalized.favorite,
     customMessage: normalized.customMessage
   };
@@ -807,6 +912,10 @@ export function loadDraftSnapshot(dateKey) {
     reminders: Array.isArray(draft.reminders)
       ? draft.reminders.map((item) => normalizeReminder(item, `${dateKey}T12:00:00.000Z`)).filter((item) => item.title)
       : [],
+    habits: normalizeHabits(draft.habits),
+    stickers: normalizeStickers(draft.stickers),
+    scrapbookText: typeof draft.scrapbookText === "string" ? draft.scrapbookText : "",
+    futureMessages: normalizeFutureMessages(draft.futureMessages, `${dateKey}T12:00:00.000Z`),
     favorite: Boolean(draft.favorite),
     customMessage: typeof draft.customMessage === "string" ? draft.customMessage : ""
   };
@@ -821,6 +930,10 @@ export function persistDraftSnapshot(dateKey, draft) {
     reminders: Array.isArray(draft?.reminders)
       ? draft.reminders.map((item) => normalizeReminder(item, `${dateKey}T12:00:00.000Z`)).filter((item) => item.title)
       : [],
+    habits: normalizeHabits(draft?.habits),
+    stickers: normalizeStickers(draft?.stickers),
+    scrapbookText: typeof draft?.scrapbookText === "string" ? draft.scrapbookText : "",
+    futureMessages: normalizeFutureMessages(draft?.futureMessages, `${dateKey}T12:00:00.000Z`),
     favorite: Boolean(draft?.favorite),
     customMessage: typeof draft?.customMessage === "string" ? draft.customMessage : "",
     updatedAt: new Date().toISOString()

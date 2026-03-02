@@ -38,36 +38,38 @@
   --text-base: clamp(1.02rem, 0.98rem + 0.18vw, 1.1rem);
   --text-sm: clamp(0.95rem, 0.92rem + 0.12vw, 1.01rem);
   --text-xs: clamp(0.84rem, 0.81rem + 0.12vw, 0.92rem);
+  --ui-speed: 0.3s;
+  --parallax-offset: 0px;
 }
 
 [data-theme="dark"] {
-  --bg-start: #1d1712;
-  --bg-end: #3a2c1f;
-  --ink: #f2e4d2;
-  --ink-soft: #d6c2ab;
-  --panel: rgba(36, 28, 21, 0.94);
-  --panel-border: rgba(214, 194, 171, 0.24);
-  --accent: #c9a57f;
-  --accent-strong: #dfc09b;
-  --accent-soft: #49372a;
-  --surface: #30251c;
-  --surface-soft: #3a2d22;
-  --topbar-bg: linear-gradient(180deg, rgba(43, 33, 25, 0.95), rgba(35, 27, 21, 0.94));
-  --stat-bg: linear-gradient(164deg, rgba(58, 43, 32, 0.92), rgba(46, 35, 27, 0.95));
-  --month-bg: linear-gradient(170deg, rgba(59, 44, 33, 0.92), rgba(44, 33, 25, 0.94));
-  --soft-panel-bg: rgba(62, 46, 34, 0.86);
-  --legend-bg: rgba(73, 55, 42, 0.88);
-  --nav-bg: linear-gradient(180deg, rgba(34, 27, 21, 0.9), rgba(28, 22, 17, 0.98));
-  --bg-radial-a: rgba(82, 62, 44, 0.35);
-  --bg-radial-b: rgba(19, 14, 10, 0.62);
-  --today-bg: #5a4330;
-  --day-hover-bg: #4a3628;
-  --media-card-bg: #372a1f;
-  --modal-bg: #2f241c;
-  --modal-header-bg: linear-gradient(180deg, #2f241c 74%, rgba(47, 36, 28, 0));
-  --focus-outline: rgba(223, 192, 155, 0.54);
-  --shadow-soft: 0 14px 30px rgba(0, 0, 0, 0.36);
-  --shadow-hard: 0 24px 48px rgba(0, 0, 0, 0.45);
+  --bg-start: #0f1724;
+  --bg-end: #1a2638;
+  --ink: #e6ecf7;
+  --ink-soft: #b8c6de;
+  --panel: rgba(20, 30, 46, 0.94);
+  --panel-border: rgba(173, 193, 228, 0.24);
+  --accent: #89a6d7;
+  --accent-strong: #b2c8ee;
+  --accent-soft: #27374d;
+  --surface: #22334a;
+  --surface-soft: #2a3a53;
+  --topbar-bg: linear-gradient(180deg, rgba(27, 39, 57, 0.95), rgba(18, 27, 41, 0.94));
+  --stat-bg: linear-gradient(164deg, rgba(31, 45, 66, 0.92), rgba(23, 34, 50, 0.95));
+  --month-bg: linear-gradient(170deg, rgba(30, 44, 65, 0.92), rgba(20, 31, 48, 0.94));
+  --soft-panel-bg: rgba(35, 51, 73, 0.86);
+  --legend-bg: rgba(43, 63, 89, 0.88);
+  --nav-bg: linear-gradient(180deg, rgba(19, 29, 44, 0.9), rgba(13, 22, 34, 0.98));
+  --bg-radial-a: rgba(72, 98, 142, 0.32);
+  --bg-radial-b: rgba(10, 16, 25, 0.68);
+  --today-bg: #3b4f71;
+  --day-hover-bg: #324761;
+  --media-card-bg: #24364f;
+  --modal-bg: #1f2f46;
+  --modal-header-bg: linear-gradient(180deg, #1f2f46 74%, rgba(31, 47, 70, 0));
+  --focus-outline: rgba(178, 200, 238, 0.54);
+  --shadow-soft: 0 14px 30px rgba(2, 6, 14, 0.42);
+  --shadow-hard: 0 24px 48px rgba(1, 3, 9, 0.56);
 }
 
 * {
@@ -118,6 +120,20 @@ textarea:focus-visible {
 .app-shell {
   width: min(1240px, calc(100vw - 1.2rem));
   margin: clamp(10px, 2.3vw, 26px) auto 48px;
+  position: relative;
+  isolation: isolate;
+}
+
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: -28vh -10vw auto;
+  height: 52vh;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0));
+  pointer-events: none;
+  z-index: -1;
+  transform: translateY(calc(var(--parallax-offset) * -0.35));
+  transition: transform var(--ui-speed) ease-out;
 }
 
 .topbar {
@@ -244,7 +260,7 @@ textarea:focus-visible {
   padding: 8px 14px;
   font-size: var(--text-sm);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color var(--ui-speed) ease, color var(--ui-speed) ease, box-shadow var(--ui-speed) ease;
 }
 
 .segmented button.active {
@@ -557,7 +573,7 @@ textarea:focus-visible {
   cursor: pointer;
   background: var(--surface);
   color: var(--ink);
-  transition: transform 0.18s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  transition: transform var(--ui-speed) ease, box-shadow var(--ui-speed) ease, background-color var(--ui-speed) ease, border-color var(--ui-speed) ease;
 }
 
 .btn:hover {
@@ -620,6 +636,150 @@ textarea:focus-visible {
   margin-top: 18px;
 }
 
+.planner-classeur {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.month-stage {
+  perspective: 1200px;
+}
+
+.month-stage[data-turn="next"] .month-card-focus {
+  animation: month-turn-next var(--ui-speed) ease;
+}
+
+.month-stage[data-turn="prev"] .month-card-focus {
+  animation: month-turn-prev var(--ui-speed) ease;
+}
+
+.month-tabs-rail {
+  display: grid;
+  gap: 8px;
+}
+
+.month-tab-btn {
+  border: 1px solid rgba(56, 39, 20, 0.26);
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-radius: 12px 0 0 12px;
+  min-height: 36px;
+  min-width: 62px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--ui-speed) ease;
+}
+
+.month-tab-btn.active {
+  background: linear-gradient(160deg, #896645, #6e5038);
+  color: #fff;
+  transform: translateX(-4px);
+}
+
+.month-card-focus {
+  transform-origin: left center;
+}
+
+.month-card-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.month-card-header h3 {
+  margin: 0;
+}
+
+.month-shift-btn {
+  min-height: 36px;
+  min-width: 36px;
+  padding: 0;
+}
+
+.month-week-shortcuts {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.week-shortcut-btn {
+  border: 1px solid rgba(56, 39, 20, 0.26);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--ui-speed) ease;
+}
+
+.week-shortcut-btn:hover {
+  transform: translateY(-1px);
+  color: var(--ink);
+  border-color: rgba(56, 39, 20, 0.42);
+}
+
+.week-planner {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.week-planner-header {
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.week-planner-header h3 {
+  margin: 0;
+}
+
+.week-planner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.week-day-card {
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+  padding: 11px;
+}
+
+.week-day-card p {
+  margin: 7px 0 0;
+}
+
+.week-day-card.is-today {
+  border-color: rgba(156, 118, 77, 0.68);
+  box-shadow: 0 0 0 2px rgba(156, 118, 77, 0.15) inset, var(--shadow-soft);
+}
+
 .month-card {
   border: 1px solid var(--panel-border);
   background: var(--month-bg);
@@ -663,7 +823,7 @@ textarea:focus-visible {
   justify-content: center;
   color: var(--ink);
   padding: 4px 2px;
-  transition: transform 0.16s ease, background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--ui-speed) ease, background-color var(--ui-speed) ease, border-color var(--ui-speed) ease, opacity var(--ui-speed) ease, box-shadow var(--ui-speed) ease;
 }
 
 .day-cell.has-entry {
@@ -936,6 +1096,16 @@ textarea:focus-visible {
   font-size: var(--text-sm);
 }
 
+.guided-prompt {
+  margin: 8px 0;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px dashed rgba(56, 39, 20, 0.24);
+  padding: 9px 10px;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
 textarea {
   width: 100%;
   min-height: 124px;
@@ -962,6 +1132,7 @@ textarea {
   font-size: var(--text-sm);
   cursor: pointer;
   font-weight: 600;
+  transition: transform var(--ui-speed) ease, background-color var(--ui-speed) ease, color var(--ui-speed) ease;
 }
 
 .mood-pill.active {
@@ -1014,6 +1185,166 @@ textarea {
   display: block;
   margin-bottom: 6px;
   background: var(--media-card-bg);
+}
+
+.habit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.habit-item {
+  border: 1px solid rgba(56, 39, 20, 0.24);
+  border-radius: 12px;
+  background: var(--surface);
+  min-height: 44px;
+  padding: 7px 10px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--ui-speed) ease;
+}
+
+.habit-item.is-done {
+  background: linear-gradient(160deg, #c6efdd, #95d8bf);
+  border-color: rgba(35, 94, 65, 0.38);
+  color: #19452f;
+}
+
+[data-theme="dark"] .habit-item.is-done {
+  background: linear-gradient(160deg, #2c5f4c, #396f5a);
+  color: #d8f8eb;
+}
+
+.habit-progress-track {
+  margin-top: 10px;
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(211, 188, 157, 0.42);
+  overflow: hidden;
+}
+
+.habit-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffd5de, #f9c9a3, #bfe8d8);
+  transition: width var(--ui-speed) ease;
+}
+
+.sticker-library {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sticker-library-btn {
+  border: 1px solid rgba(56, 39, 20, 0.24);
+  background: var(--surface);
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scrapbook-canvas {
+  margin-top: 12px;
+  position: relative;
+  min-height: 220px;
+  border-radius: 14px;
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.08)), var(--surface);
+  overflow: hidden;
+}
+
+.scrapbook-canvas.with-image {
+  background-size: cover;
+  background-position: center;
+}
+
+.scrapbook-text-preview {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  margin: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.76);
+  color: #2d1f13;
+  padding: 8px 10px;
+  font-size: var(--text-sm);
+  max-height: 70px;
+  overflow: auto;
+}
+
+[data-theme="dark"] .scrapbook-text-preview {
+  background: rgba(18, 29, 44, 0.76);
+  color: #e8effb;
+}
+
+.scrapbook-sticker {
+  position: absolute;
+  border: 0;
+  background: transparent;
+  font-size: 1.65rem;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 4px rgba(20, 14, 10, 0.28));
+  transition: transform var(--ui-speed) ease;
+}
+
+.scrapbook-sticker.active {
+  transform: translate(-50%, -50%) scale(1.16) !important;
+}
+
+.sticker-editor {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.sticker-editor label {
+  display: grid;
+  gap: 4px;
+  font-size: var(--text-sm);
+}
+
+.sticker-editor input[type="range"] {
+  width: 100%;
+}
+
+.capsule-panel {
+  margin-top: 12px;
+  border-top: 1px dashed rgba(56, 39, 20, 0.28);
+  padding-top: 12px;
+}
+
+.capsule-panel h4 {
+  margin: 0 0 6px;
+  font-size: clamp(0.98rem, 0.94rem + 0.16vw, 1.08rem);
+}
+
+.capsule-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.capsule-list li {
+  border: 1px solid rgba(56, 39, 20, 0.24);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 9px;
+}
+
+.capsule-list p {
+  margin: 5px 0;
 }
 
 .inline-actions {
@@ -1136,6 +1467,28 @@ textarea {
   background: var(--surface);
 }
 
+@keyframes month-turn-next {
+  from {
+    opacity: 0.35;
+    transform: rotateY(-14deg) translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: rotateY(0deg) translateX(0);
+  }
+}
+
+@keyframes month-turn-prev {
+  from {
+    opacity: 0.35;
+    transform: rotateY(14deg) translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: rotateY(0deg) translateX(0);
+  }
+}
+
 @media (max-width: 980px) {
   .topbar {
     position: relative;
@@ -1160,6 +1513,19 @@ textarea {
 
   .calendar-grid {
     grid-template-columns: 1fr;
+  }
+
+  .planner-classeur {
+    grid-template-columns: 1fr;
+  }
+
+  .month-tabs-rail {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .month-tab-btn {
+    border-radius: 10px;
+    min-width: 0;
   }
 
   .timeline-grid {
@@ -1300,6 +1666,18 @@ textarea {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .week-planner-header {
+    grid-template-columns: 1fr;
+  }
+
+  .week-planner-actions {
+    justify-content: stretch;
+  }
+
+  .week-planner-actions .btn {
+    flex: 1;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1326,6 +1704,14 @@ textarea {
     grid-column: 1 / -1;
   }
 
+  .month-tabs-rail {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .month-tab-btn.active {
+    transform: none;
+  }
+
   .segmented {
     width: 100%;
     justify-content: space-between;
@@ -1344,6 +1730,10 @@ textarea {
   .inline-actions .btn,
   .inline-actions input {
     width: 100%;
+  }
+
+  .habit-grid {
+    grid-template-columns: 1fr;
   }
 
   .reminder-list li {

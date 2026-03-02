@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CALENDAR_WEEKDAYS,
+  HABIT_CATALOG,
   MAX_MEDIA_PER_ENTRY,
   MOOD_OPTIONS,
   STORAGE_BYTES_SOFT_LIMIT,
@@ -68,6 +69,106 @@ function sortReminders(reminders) {
   });
 }
 
+const MONTH_TAB_LABELS = {
+  fr: ["JAN", "FEV", "MAR", "AVR", "MAI", "JUN", "JUL", "AOU", "SEP", "OCT", "NOV", "DEC"],
+  en: ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
+  es: ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
+};
+
+const STICKER_LIBRARY = [
+  { emoji: "😊", label: "Mood zen" },
+  { emoji: "🔥", label: "Motivation" },
+  { emoji: "🌈", label: "Good vibes" },
+  { emoji: "☀️", label: "Météo soleil" },
+  { emoji: "🌧️", label: "Météo pluie" },
+  { emoji: "💪", label: "Force" },
+  { emoji: "✨", label: "Petit miracle" },
+  { emoji: "🫶", label: "Gratitude" }
+];
+
+function clampRange(value, minimum, maximum) {
+  return Math.min(maximum, Math.max(minimum, Number(value)));
+}
+
+function addDays(date, amount) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + amount);
+  return copy;
+}
+
+function getWeekStartKey(dateKey) {
+  const date = parseDateKey(dateKey);
+  const day = date.getDay();
+  const delta = day === 0 ? -6 : 1 - day;
+  return formatDateKey(addDays(date, delta));
+}
+
+function getMonthTurnDirection(currentIndex, targetIndex) {
+  const forwardDistance = (targetIndex - currentIndex + 12) % 12;
+  const backwardDistance = (currentIndex - targetIndex + 12) % 12;
+  return forwardDistance <= backwardDistance ? "next" : "prev";
+}
+
+function getIsoWeekNumber(inputDate) {
+  const date = new Date(inputDate);
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+  const week1 = new Date(date.getFullYear(), 0, 4);
+  return (
+    1 +
+    Math.round(
+      ((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) /
+        7
+    )
+  );
+}
+
+function buildMonthWeekShortcuts(month) {
+  if (!month || !Array.isArray(month.cells) || month.cells.length === 0) {
+    return [];
+  }
+
+  const shortcuts = [];
+  for (let index = 0; index < month.cells.length; index += 7) {
+    const slice = month.cells.slice(index, index + 7);
+    const firstDay = slice.find(Boolean);
+    if (!firstDay) {
+      continue;
+    }
+
+    const weekStartKey = getWeekStartKey(firstDay.dateKey);
+    shortcuts.push({
+      id: `${month.monthIndex}-${index}-${weekStartKey}`,
+      weekStartKey,
+      weekNumber: getIsoWeekNumber(parseDateKey(weekStartKey))
+    });
+  }
+
+  return shortcuts;
+}
+
+function buildWeekPlannerCells(weekStartKey, entries, todayKey) {
+  const startDate = parseDateKey(weekStartKey);
+
+  return Array.from({ length: 7 }, (_, offset) => {
+    const date = addDays(startDate, offset);
+    const dateKey = formatDateKey(date);
+    const entry = entries?.[dateKey];
+    const reminderCount = Array.isArray(entry?.reminders)
+      ? entry.reminders.filter((item) => !item.done).length
+      : 0;
+    const completedHabits = HABIT_CATALOG.filter((habit) => Boolean(entry?.habits?.[habit.id])).length;
+
+    return {
+      dateKey,
+      entry,
+      reminderCount,
+      completedHabits,
+      isToday: dateKey === todayKey
+    };
+  });
+}
+
 function buildReadableJournalMarkdown(entries, profileName) {
   const titleName = profileName?.trim() ? `${profileName.trim()} - ` : "";
   const now = new Date().toISOString();
@@ -126,6 +227,35 @@ function buildReadableJournalMarkdown(entries, profileName) {
       lines.push("### Rappels");
       for (const reminder of entry.reminders) {
         lines.push(`- [${reminder.done ? "x" : " "}] ${reminder.title}`);
+      }
+    }
+
+    const completedHabits = HABIT_CATALOG.filter((habit) => Boolean(entry?.habits?.[habit.id]));
+    if (completedHabits.length > 0) {
+      lines.push("");
+      lines.push("### Habitudes");
+      lines.push(`- ${completedHabits.map((habit) => `${habit.icon} ${habit.label}`).join(" | ")}`);
+    }
+
+    if (entry.scrapbookText?.trim()) {
+      lines.push("");
+      lines.push("### Scrapbook");
+      lines.push(entry.scrapbookText.trim());
+      if (Array.isArray(entry.stickers) && entry.stickers.length > 0) {
+        lines.push(`- Stickers: ${entry.stickers.map((item) => item.emoji).join(" ")}`);
+      }
+    } else if (Array.isArray(entry.stickers) && entry.stickers.length > 0) {
+      lines.push("");
+      lines.push("### Scrapbook");
+      lines.push(`- Stickers: ${entry.stickers.map((item) => item.emoji).join(" ")}`);
+    }
+
+    if (Array.isArray(entry.futureMessages) && entry.futureMessages.length > 0) {
+      lines.push("");
+      lines.push("### Capsules temporelles");
+      for (const message of entry.futureMessages) {
+        const recipient = message.recipient || "Moi";
+        lines.push(`- Pour ${recipient} le ${formatDateTimeFr(message.openOn)}`);
       }
     }
 
@@ -384,6 +514,10 @@ function App() {
   const [entries, setEntries] = useState(() => loadEntries());
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [viewMode, setViewMode] = useState("calendar");
+  const [focusedMonthIndex, setFocusedMonthIndex] = useState(() => new Date().getMonth());
+  const [monthTurnDirection, setMonthTurnDirection] = useState("next");
+  const [monthTurnTick, setMonthTurnTick] = useState(0);
+  const [activeWeekStartKey, setActiveWeekStartKey] = useState(() => getWeekStartKey(todayKey));
   const [activeDateKey, setActiveDateKey] = useState(todayKey);
   const [draft, setDraft] = useState(() => createEmptyDraft(todayKey, null));
   const [editorOpen, setEditorOpen] = useState(false);
@@ -433,6 +567,11 @@ function App() {
 
   const [reminderTitle, setReminderTitle] = useState("");
   const [reminderWhen, setReminderWhen] = useState("");
+  const [capsuleRecipient, setCapsuleRecipient] = useState("");
+  const [capsuleMessage, setCapsuleMessage] = useState("");
+  const [capsuleOpenDate, setCapsuleOpenDate] = useState("");
+  const [selectedStickerId, setSelectedStickerId] = useState("");
+  const [parallaxOffset, setParallaxOffset] = useState(0);
 
   const [lockEnabled, setLockEnabled] = useState(() => hasLockPin());
   const [isUnlocked, setIsUnlocked] = useState(() => !hasLockPin());
@@ -456,6 +595,22 @@ function App() {
   const dayMessage = draft.customMessage.trim() || generatedMessage;
   const dailyNotificationInfo = getDailyMotivationScheduleInfo();
   const t = (key, vars) => resolveText(appLanguage, key, vars);
+  const monthTabLabels = MONTH_TAB_LABELS[appLanguage] || MONTH_TAB_LABELS.fr;
+  const activeMonth = calendarMonths[focusedMonthIndex] || calendarMonths[0] || null;
+  const monthWeekShortcuts = useMemo(() => buildMonthWeekShortcuts(activeMonth), [activeMonth]);
+  const weekPlannerCells = useMemo(
+    () => buildWeekPlannerCells(activeWeekStartKey, entries, todayKey),
+    [activeWeekStartKey, entries, todayKey]
+  );
+  const weekStartDate = parseDateKey(activeWeekStartKey);
+  const weekEndDate = addDays(weekStartDate, 6);
+  const activeWeekNumber = getIsoWeekNumber(weekStartDate);
+  const completedHabitCount = HABIT_CATALOG.filter((habit) => Boolean(draft.habits?.[habit.id])).length;
+  const habitProgress = Math.round((completedHabitCount / HABIT_CATALOG.length) * 100);
+  const selectedSticker = Array.isArray(draft.stickers)
+    ? draft.stickers.find((sticker) => sticker.id === selectedStickerId) || null
+    : null;
+  const scrapbookBackground = draft.media.find((media) => String(media.type || "").startsWith("image/"))?.dataUrl || "";
   const historyBuckets = useMemo(() => {
     const journal = timelineEntries.filter(
       (entry) => Boolean(entry.text?.trim()) || (Array.isArray(entry.media) && entry.media.length > 0)
@@ -472,9 +627,12 @@ function App() {
     const existing = entries[dateKey];
     const baseDraft = createEmptyDraft(dateKey, existing);
     const cachedDraft = loadDraftSnapshot(dateKey);
+    const targetDate = parseDateKey(dateKey);
 
     setActiveDateKey(dateKey);
-    setSelectedYear(parseDateKey(dateKey).getFullYear());
+    setSelectedYear(targetDate.getFullYear());
+    setFocusedMonthIndex(targetDate.getMonth());
+    setActiveWeekStartKey(getWeekStartKey(dateKey));
     setDraft(
       cachedDraft
         ? {
@@ -487,11 +645,32 @@ function App() {
 
     setReminderTitle("");
     setReminderWhen("");
+    setCapsuleRecipient("");
+    setCapsuleMessage("");
+    setCapsuleOpenDate("");
+    setSelectedStickerId("");
     setStatusMessage("");
     setErrorMessage("");
     setAutoSaveInfo("");
     setActiveScreen("calendar");
     setEditorOpen(true);
+  }
+
+  function jumpToMonth(targetIndex) {
+    const normalizedIndex = ((targetIndex % 12) + 12) % 12;
+    setMonthTurnDirection(getMonthTurnDirection(focusedMonthIndex, normalizedIndex));
+    setFocusedMonthIndex(normalizedIndex);
+    setMonthTurnTick((previous) => previous + 1);
+    setViewMode("calendar");
+  }
+
+  function shiftMonth(delta) {
+    jumpToMonth(focusedMonthIndex + delta);
+  }
+
+  function openWeekPlanner(dateKey) {
+    setActiveWeekStartKey(getWeekStartKey(dateKey));
+    setViewMode("week");
   }
 
   useEffect(() => {
@@ -537,6 +716,20 @@ function App() {
       // Ignore persistence errors.
     }
   }, [reminderRingtone]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleScroll = () => {
+      setParallaxOffset(Math.round(window.scrollY * 0.2));
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     if (!editorOpen) {
@@ -631,6 +824,7 @@ function App() {
       const nowIso = new Date().toISOString();
       const text = draft.text.trim();
       const customMessage = draft.customMessage.trim();
+      const scrapbookText = draft.scrapbookText.trim();
       const reminders = sortReminders(
         draft.reminders
           .map((item) => ({
@@ -643,12 +837,52 @@ function App() {
           }))
           .filter((item) => item.title)
       );
+      const habits = HABIT_CATALOG.reduce((accumulator, habit) => {
+        accumulator[habit.id] = Boolean(draft.habits?.[habit.id]);
+        return accumulator;
+      }, {});
+      const hasHabitProgress = Object.values(habits).some(Boolean);
+      const stickers = Array.isArray(draft.stickers)
+        ? draft.stickers
+            .map((item) => ({
+              id: item.id || createClientId(),
+              emoji: typeof item.emoji === "string" ? item.emoji.trim() : "",
+              label: typeof item.label === "string" ? item.label : "",
+              x: clampRange(item.x, 4, 96),
+              y: clampRange(item.y, 8, 92),
+              rotate: clampRange(item.rotate, -30, 30)
+            }))
+            .filter((item) => item.emoji)
+        : [];
+      const futureMessages = Array.isArray(draft.futureMessages)
+        ? draft.futureMessages
+            .map((item) => {
+              const openDate = new Date(item.openOn);
+              if (Number.isNaN(openDate.getTime())) {
+                return null;
+              }
+
+              return {
+                id: item.id || createClientId(),
+                recipient: typeof item.recipient === "string" ? item.recipient.trim() : "",
+                message: typeof item.message === "string" ? item.message.trim() : "",
+                openOn: openDate.toISOString(),
+                createdAt: item.createdAt || nowIso
+              };
+            })
+            .filter((item) => item && item.message)
+            .sort((left, right) => left.openOn.localeCompare(right.openOn))
+        : [];
 
       const moodChanged = existing ? draft.mood !== existing.mood : draft.mood !== 3;
       const hasContent = Boolean(
         text.length > 0 ||
           draft.media.length > 0 ||
           reminders.length > 0 ||
+          hasHabitProgress ||
+          stickers.length > 0 ||
+          futureMessages.length > 0 ||
+          scrapbookText.length > 0 ||
           customMessage.length > 0 ||
           draft.favorite ||
           moodChanged
@@ -668,6 +902,10 @@ function App() {
           prompt: dayPrompt,
           customMessage,
           reminders,
+          habits,
+          stickers,
+          scrapbookText,
+          futureMessages,
           favorite: Boolean(draft.favorite),
           metadata,
           createdAt: existing?.createdAt || nowIso,
@@ -771,6 +1009,104 @@ function App() {
     setDraft((previous) => ({
       ...previous,
       reminders: previous.reminders.filter((item) => item.id !== reminderId)
+    }));
+  }
+
+  function toggleHabit(habitId) {
+    setDraft((previous) => ({
+      ...previous,
+      habits: {
+        ...(previous.habits || {}),
+        [habitId]: !previous.habits?.[habitId]
+      }
+    }));
+  }
+
+  function addStickerToDraft(stickerTemplate) {
+    const nextSticker = {
+      id: createClientId(),
+      emoji: stickerTemplate.emoji,
+      label: stickerTemplate.label,
+      x: Math.round(16 + Math.random() * 68),
+      y: Math.round(18 + Math.random() * 62),
+      rotate: Math.round(-14 + Math.random() * 28)
+    };
+
+    setDraft((previous) => ({
+      ...previous,
+      stickers: [...(previous.stickers || []), nextSticker]
+    }));
+    setSelectedStickerId(nextSticker.id);
+  }
+
+  function removeSticker(stickerId) {
+    setDraft((previous) => ({
+      ...previous,
+      stickers: (previous.stickers || []).filter((item) => item.id !== stickerId)
+    }));
+    setSelectedStickerId((previous) => (previous === stickerId ? "" : previous));
+  }
+
+  function moveSticker(stickerId, axis, rawValue) {
+    const nextValue = axis === "x" ? clampRange(rawValue, 4, 96) : clampRange(rawValue, 8, 92);
+
+    setDraft((previous) => ({
+      ...previous,
+      stickers: (previous.stickers || []).map((item) =>
+        item.id === stickerId
+          ? {
+              ...item,
+              [axis]: nextValue
+            }
+          : item
+      )
+    }));
+  }
+
+  function addFutureMessage() {
+    setErrorMessage("");
+
+    const message = capsuleMessage.trim();
+    if (!message) {
+      setErrorMessage("Écris un message avant d'ajouter une capsule temporelle.");
+      return;
+    }
+
+    if (!capsuleOpenDate) {
+      setErrorMessage("Choisis la date d'ouverture de la capsule.");
+      return;
+    }
+
+    const openDate = new Date(capsuleOpenDate);
+    if (Number.isNaN(openDate.getTime()) || openDate.getTime() <= Date.now()) {
+      setErrorMessage("La capsule doit s'ouvrir dans le futur.");
+      return;
+    }
+
+    const nextMessage = {
+      id: createClientId(),
+      recipient: capsuleRecipient.trim(),
+      message,
+      openOn: openDate.toISOString(),
+      createdAt: new Date().toISOString()
+    };
+
+    setDraft((previous) => ({
+      ...previous,
+      futureMessages: [...(previous.futureMessages || []), nextMessage].sort((left, right) =>
+        left.openOn.localeCompare(right.openOn)
+      )
+    }));
+
+    setCapsuleRecipient("");
+    setCapsuleMessage("");
+    setCapsuleOpenDate("");
+  }
+
+  function removeFutureMessage(futureMessageId) {
+    setDraft((previous) => ({
+      ...previous,
+      futureMessages: (previous.futureMessages || []).filter((item) => item.id !== futureMessageId)
     }));
   }
 
@@ -907,7 +1243,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={{ "--parallax-offset": `${parallaxOffset}px` }}>
       <header className="topbar topbar-minimal">
         <div className="topbar-title">
           <h1>NOUS {selectedYear}</h1>
@@ -940,7 +1276,15 @@ function App() {
             <button className="btn" onClick={() => setSelectedYear((year) => year - 1)}>
               {t("yearMinus")}
             </button>
-            <button className="btn" onClick={() => setSelectedYear(new Date().getFullYear())}>
+            <button
+              className="btn"
+              onClick={() => {
+                const now = new Date();
+                setSelectedYear(now.getFullYear());
+                jumpToMonth(now.getMonth());
+                setActiveWeekStartKey(getWeekStartKey(todayKey));
+              }}
+            >
               {t("today")}
             </button>
             <button className="btn" onClick={() => setSelectedYear((year) => year + 1)}>
@@ -950,6 +1294,9 @@ function App() {
               <button className={viewMode === "calendar" ? "active" : ""} onClick={() => setViewMode("calendar")}>
                 {t("calendar")}
               </button>
+              <button className={viewMode === "week" ? "active" : ""} onClick={() => setViewMode("week")}>
+                Semaine
+              </button>
               <button className={viewMode === "timeline" ? "active" : ""} onClick={() => setViewMode("timeline")}>
                 {t("timeline")}
               </button>
@@ -958,46 +1305,130 @@ function App() {
 
           <main>
             {viewMode === "calendar" ? (
-              <section className="calendar-grid">
-                {calendarMonths.map((month) => (
-                  <article className="month-card" key={month.monthIndex}>
-                    <h3>{month.monthName}</h3>
-                    <div className="weekday-row">
-                      {CALENDAR_WEEKDAYS.map((weekday, index) => (
-                        <span key={`${month.monthName}-${index}`}>{weekday}</span>
-                      ))}
-                    </div>
+              <section className="planner-classeur">
+                <div className="month-stage" key={`${selectedYear}-${focusedMonthIndex}-${monthTurnTick}`} data-turn={monthTurnDirection}>
+                  {activeMonth ? (
+                    <article className="month-card month-card-focus">
+                      <div className="month-card-header">
+                        <button className="btn month-shift-btn" onClick={() => shiftMonth(-1)} aria-label="Mois précédent">
+                          ◀
+                        </button>
+                        <h3>{activeMonth.monthName} {selectedYear}</h3>
+                        <button className="btn month-shift-btn" onClick={() => shiftMonth(1)} aria-label="Mois suivant">
+                          ▶
+                        </button>
+                      </div>
 
-                    <div className="day-grid">
-                      {month.cells.map((cell, index) => {
-                        if (!cell) {
-                          return <span className="day-cell empty" key={`${month.monthName}-empty-${index}`} />;
-                        }
+                      <div className="weekday-row">
+                        {CALENDAR_WEEKDAYS.map((weekday, index) => (
+                          <span key={`${activeMonth.monthName}-${index}`}>{weekday}</span>
+                        ))}
+                      </div>
 
-                        return (
-                          <button
-                            key={cell.dateKey}
+                      <div className="day-grid">
+                        {activeMonth.cells.map((cell, index) => {
+                          if (!cell) {
+                            return <span className="day-cell empty" key={`${activeMonth.monthName}-empty-${index}`} />;
+                          }
+
+                          return (
+                            <button
+                              key={cell.dateKey}
                             className={`day-cell ${cell.hasEntry ? "has-entry" : ""} ${cell.isToday ? "is-today" : ""} ${
-                              cell.isPast ? "is-past" : ""
-                            }`}
-                            onClick={() => openEditor(cell.dateKey)}
-                            title={formatDateFr(cell.dateKey)}
+                                cell.isPast ? "is-past" : ""
+                              }`}
+                              onClick={() => openEditor(cell.dateKey)}
+                              title={formatDateFr(cell.dateKey)}
+                            >
+                              <span className="day-number">{cell.day}</span>
+                              <span className="day-mood" aria-hidden="true" title="Humeur du jour">
+                                {cell.mood ? moodToEmoji(cell.mood) : "·"}
+                              </span>
+                              <span className="day-icons" aria-hidden="true">
+                                {cell.hasFavorite ? <span title="Favori">❤️</span> : <span className="ghost">·</span>}
+                                {cell.hasJournal ? <span title="Journal">📝</span> : <span className="ghost">·</span>}
+                                {cell.hasReminderActive ? <span title="Rappel actif">🔔</span> : <span className="ghost">·</span>}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="month-week-shortcuts" aria-label="Raccourcis semaine">
+                        {monthWeekShortcuts.map((shortcut) => (
+                          <button
+                            className="week-shortcut-btn"
+                            key={shortcut.id}
+                            onClick={() => openWeekPlanner(shortcut.weekStartKey)}
                           >
-                            <span className="day-number">{cell.day}</span>
-                            <span className="day-mood" aria-hidden="true" title="Humeur du jour">
-                              {cell.mood ? moodToEmoji(cell.mood) : "·"}
-                            </span>
-                            <span className="day-icons" aria-hidden="true">
-                              {cell.hasFavorite ? <span title="Favori">❤️</span> : <span className="ghost">·</span>}
-                              {cell.hasJournal ? <span title="Journal">📝</span> : <span className="ghost">·</span>}
-                              {cell.hasReminderActive ? <span title="Rappel actif">🔔</span> : <span className="ghost">·</span>}
-                            </span>
+                            S{shortcut.weekNumber}
                           </button>
-                        );
-                      })}
-                    </div>
-                  </article>
-                ))}
+                        ))}
+                      </div>
+                    </article>
+                  ) : null}
+                </div>
+
+                <aside className="month-tabs-rail" aria-label="Navigation mensuelle">
+                  {monthTabLabels.map((label, index) => (
+                    <button
+                      key={`month-tab-${label}-${index}`}
+                      className={`month-tab-btn ${focusedMonthIndex === index ? "active" : ""}`}
+                      onClick={() => jumpToMonth(index)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </aside>
+              </section>
+            ) : viewMode === "week" ? (
+              <section className="week-planner">
+                <div className="week-planner-header">
+                  <div>
+                    <h3>Semaine {activeWeekNumber}</h3>
+                    <p className="soft">
+                      {formatDateFr(formatDateKey(weekStartDate), { day: "numeric", month: "short" })} -{" "}
+                      {formatDateFr(formatDateKey(weekEndDate), { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <div className="week-planner-actions">
+                    <button
+                      className="btn"
+                      onClick={() => setActiveWeekStartKey(formatDateKey(addDays(weekStartDate, -7)))}
+                    >
+                      Semaine -1
+                    </button>
+                    <button className="btn" onClick={() => setViewMode("calendar")}>
+                      Retour mois
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => setActiveWeekStartKey(formatDateKey(addDays(weekStartDate, 7)))}
+                    >
+                      Semaine +1
+                    </button>
+                  </div>
+                </div>
+
+                <div className="week-grid">
+                  {weekPlannerCells.map((cell) => {
+                    const entry = cell.entry;
+                    const previewSource = entry?.text?.trim() || entry?.scrapbookText?.trim() || "";
+                    const preview = previewSource.length > 110 ? `${previewSource.slice(0, 110)}...` : previewSource;
+
+                    return (
+                      <article className={`week-day-card ${cell.isToday ? "is-today" : ""}`} key={`week-${cell.dateKey}`}>
+                        <button className="linkish" onClick={() => openEditor(cell.dateKey)}>
+                          {formatDateFr(cell.dateKey, { weekday: "short", day: "numeric", month: "short" })}
+                        </button>
+                        <p className="soft">
+                          {moodToEmoji(entry?.mood || 3)} · 🔔 {cell.reminderCount} · ✅ {cell.completedHabits}
+                        </p>
+                        <p>{preview || "Aucune note détaillée pour ce jour."}</p>
+                      </article>
+                    );
+                  })}
+                </div>
               </section>
             ) : (
               <section className="timeline-grid">
@@ -1008,13 +1439,16 @@ function App() {
                   </article>
                 ) : (
                   timelineEntries.map((entry) => {
-                    const preview = entry.text.length > 170 ? `${entry.text.slice(0, 170)}...` : entry.text;
+                    const previewSource = entry.text?.trim() || entry.scrapbookText?.trim() || "";
+                    const preview = previewSource.length > 170 ? `${previewSource.slice(0, 170)}...` : previewSource;
                     const weather = entry.metadata?.weather
                       ? `${entry.metadata.weather.description} ${entry.metadata.weather.temperatureC ?? ""}°C`
                       : "Météo indisponible";
                     const mediaItems = Array.isArray(entry.media) ? entry.media : [];
                     const mediaPreview = mediaItems.slice(0, 3);
                     const hiddenMediaCount = Math.max(0, mediaItems.length - mediaPreview.length);
+                    const completedHabitsInEntry = HABIT_CATALOG.filter((habit) => Boolean(entry.habits?.[habit.id])).length;
+                    const futureMessageCount = Array.isArray(entry.futureMessages) ? entry.futureMessages.length : 0;
 
                     return (
                       <article className="timeline-card" key={entry.id}>
@@ -1043,6 +1477,8 @@ function App() {
                           <span className="timeline-chip">📷 {mediaItems.length} média(s)</span>
                           <span className="timeline-chip">{entry.favorite ? "❤️ Favori" : "🤍 Non favori"}</span>
                           <span className="timeline-chip">🔔 {entry.reminders?.filter((item) => !item.done).length || 0} actif(s)</span>
+                          <span className="timeline-chip">✅ {completedHabitsInEntry} habitude(s)</span>
+                          <span className="timeline-chip">🕰 {futureMessageCount} capsule(s)</span>
                         </div>
                       </article>
                     );
@@ -1189,7 +1625,13 @@ function App() {
                           <p className="soft">
                             {t("moodLabel", { emoji: moodToEmoji(entry.mood) })} · {t("reminderCount", { count: entry.reminders?.length || 0 })}
                           </p>
-                          <p>{entry.text?.trim() ? entry.text.slice(0, 180) : t("entryWithoutText")}</p>
+                          <p>
+                            {entry.text?.trim()
+                              ? entry.text.slice(0, 180)
+                              : entry.scrapbookText?.trim()
+                                ? entry.scrapbookText.slice(0, 180)
+                                : t("entryWithoutText")}
+                          </p>
                         </article>
                       ))}
                     </div>
@@ -1354,8 +1796,8 @@ function App() {
             </section>
 
             <section className="editor-section">
-              <h3>2) Journal personnel</h3>
-              <p className="soft">{dayPrompt}</p>
+              <h3>2) Journal guidé</h3>
+              <p className="guided-prompt">🖋️ Prompt du jour: {dayPrompt}</p>
               <label className="field-label" htmlFor="journal-content">
                 Notes du jour
               </label>
@@ -1401,7 +1843,105 @@ function App() {
             </section>
 
             <section className="editor-section">
-              <h3>3) Rappels & alertes</h3>
+              <h3>3) Habit tracker visuel</h3>
+              <div className="habit-grid">
+                {HABIT_CATALOG.map((habit) => (
+                  <button
+                    key={habit.id}
+                    className={`habit-item ${draft.habits?.[habit.id] ? "is-done" : ""}`}
+                    onClick={() => toggleHabit(habit.id)}
+                  >
+                    <span aria-hidden="true">{habit.icon}</span>
+                    <span>{habit.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="habit-progress-track" aria-label="Progression des habitudes">
+                <div className="habit-progress-fill" style={{ width: `${habitProgress}%` }} />
+              </div>
+              <p className="soft">{completedHabitCount} / {HABIT_CATALOG.length} habitudes validées</p>
+            </section>
+
+            <section className="editor-section">
+              <h3>4) Scrapbook & stickers</h3>
+              <div className="sticker-library">
+                {STICKER_LIBRARY.map((sticker) => (
+                  <button
+                    key={`${sticker.emoji}-${sticker.label}`}
+                    className="sticker-library-btn"
+                    onClick={() => addStickerToDraft(sticker)}
+                  >
+                    {sticker.emoji} {sticker.label}
+                  </button>
+                ))}
+              </div>
+
+              <label className="field-label" htmlFor="scrapbook-text">
+                Texte libre superposé
+              </label>
+              <textarea
+                id="scrapbook-text"
+                value={draft.scrapbookText || ""}
+                onChange={(event) => setDraft((previous) => ({ ...previous, scrapbookText: event.target.value }))}
+                placeholder="Écris un texte libre qui viendra se superposer dans ton scrapbook..."
+              />
+
+              <div
+                className={`scrapbook-canvas ${scrapbookBackground ? "with-image" : ""}`}
+                style={scrapbookBackground ? { backgroundImage: `url(${scrapbookBackground})` } : undefined}
+              >
+                <p className="scrapbook-text-preview">
+                  {draft.scrapbookText?.trim() || "Aperçu scrapbook: ajoute du texte et des stickers."}
+                </p>
+                {(draft.stickers || []).map((sticker) => (
+                  <button
+                    key={sticker.id}
+                    className={`scrapbook-sticker ${selectedStickerId === sticker.id ? "active" : ""}`}
+                    onClick={() => setSelectedStickerId(sticker.id)}
+                    style={{
+                      left: `${sticker.x}%`,
+                      top: `${sticker.y}%`,
+                      transform: `translate(-50%, -50%) rotate(${sticker.rotate || 0}deg)`
+                    }}
+                  >
+                    {sticker.emoji}
+                  </button>
+                ))}
+              </div>
+
+              {selectedSticker ? (
+                <div className="sticker-editor">
+                  <label>
+                    Position X
+                    <input
+                      type="range"
+                      min="4"
+                      max="96"
+                      value={Math.round(selectedSticker.x)}
+                      onChange={(event) => moveSticker(selectedSticker.id, "x", event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Position Y
+                    <input
+                      type="range"
+                      min="8"
+                      max="92"
+                      value={Math.round(selectedSticker.y)}
+                      onChange={(event) => moveSticker(selectedSticker.id, "y", event.target.value)}
+                    />
+                  </label>
+                  <button className="btn" onClick={() => removeSticker(selectedSticker.id)}>
+                    Retirer le sticker
+                  </button>
+                </div>
+              ) : (
+                <p className="soft">Sélectionne un sticker posé pour ajuster sa position.</p>
+              )}
+            </section>
+
+            <section className="editor-section">
+              <h3>5) Rappels & capsules temporelles</h3>
               <div className="inline-actions">
                 <input
                   value={reminderTitle}
@@ -1447,10 +1987,55 @@ function App() {
                   ))}
                 </ul>
               )}
+
+              <div className="capsule-panel">
+                <h4>Message pour le futur</h4>
+                <div className="inline-actions">
+                  <input
+                    value={capsuleRecipient}
+                    onChange={(event) => setCapsuleRecipient(event.target.value)}
+                    placeholder="Pour qui ? (toi, un proche...)"
+                  />
+                  <input
+                    type="datetime-local"
+                    value={capsuleOpenDate}
+                    onChange={(event) => setCapsuleOpenDate(event.target.value)}
+                  />
+                </div>
+                <textarea
+                  value={capsuleMessage}
+                  onChange={(event) => setCapsuleMessage(event.target.value)}
+                  placeholder="Écris un message qui ne sera lisible qu'à la date choisie..."
+                />
+                <button className="btn" onClick={addFutureMessage}>
+                  Programmer la capsule
+                </button>
+
+                {(draft.futureMessages || []).length === 0 ? (
+                  <p className="soft">Aucune capsule temporelle pour cette journée.</p>
+                ) : (
+                  <ul className="capsule-list">
+                    {(draft.futureMessages || []).map((futureMessage) => {
+                      const isUnlockedMessage = new Date(futureMessage.openOn).getTime() <= Date.now();
+                      return (
+                        <li key={futureMessage.id}>
+                          <p className="soft">
+                            {futureMessage.recipient || "Moi"} · ouverture le {formatDateTimeFr(futureMessage.openOn)}
+                          </p>
+                          <p>{isUnlockedMessage ? futureMessage.message : "Message verrouillé jusqu'à la date d'ouverture."}</p>
+                          <button className="btn" onClick={() => removeFutureMessage(futureMessage.id)}>
+                            Supprimer
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </section>
 
             <section className="editor-section">
-              <h3>4) Humeur du jour</h3>
+              <h3>6) Humeur du jour</h3>
               <div className="mood-row">
                 {MOOD_OPTIONS.map((mood) => (
                   <button
